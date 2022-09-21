@@ -9,3 +9,6 @@ edition = "2021"
 confy = "0.5.0"
 serde = { version = "1.0.144", features = ["derive"] }
 chrono = { version = "0.4.22", features = ["serde"] }
+interprocess = "1.1.1"
+env_logger = "0.9.1"
+log = "0.4.17"
