@@ -1,5 +1,6 @@
 extern crate confy;
 use crate::core::config::CoreConfig;
+use std::fs::remove_file;
 
 pub fn init() -> CoreConfig {
     let config: CoreConfig = match confy::load("quiver", None) {
@@ -25,6 +26,18 @@ pub fn init() -> CoreConfig {
         }
 
     };
+
+    // todo match on error kinds. Also, once std::fs::try_exists()
+    // is pulled into stable, add that.
+    match remove_file("/tmp/quiver.calendar.sock")
+    {
+        Ok(_v) => (),
+        Err(e) =>
+        {
+            ()
+            //dbg!(&e);
+        }
+    }
 
     config
 }

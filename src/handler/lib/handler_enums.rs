@@ -3,7 +3,7 @@ use serde::{
     Deserialize,
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub enum HandlerType {
     All,
     Calendar,

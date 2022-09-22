@@ -4,15 +4,17 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CoreConfig{
-    pub active_handlers: Box<[HandlerType]>,
+    pub active_handlers: Vec<HandlerType>,
     pub persistent_config: bool,
+    pub sockets_path: String
 }
 
 impl ::std::default::Default for CoreConfig {
     fn default() -> Self {
         Self {
-            active_handlers: Box::new([HandlerType::All]),
+            active_handlers: vec!(HandlerType::All),
             persistent_config: true,
+            sockets_path: "/tmp/".to_owned(),
         }
     }
 }
