@@ -1,5 +1,8 @@
-use crate::handler::lib::handler_enums::HandlerType;
-use crate::handler::calendar;
+use crate::shared::lib::request::{
+    HandlerType,
+    Action
+};
+use crate::handler::*;
 use crate::core::config::CoreConfig;
 use interprocess::local_socket::{
     LocalSocketStream
@@ -15,8 +18,15 @@ use std::{
     prelude::*, 
     BufWriter
 }};
-use crate::shared::lib::request;
 use bincode;
+use crate::client;
+
+use crate::shared;
+use chrono::{
+    DateTime,
+    offset
+};
+use std::str::FromStr;
 
 pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
     
@@ -34,7 +44,7 @@ pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
     {
         Some(_i) => 
         {
-            active_handlers = vec!(HandlerType::Calendar);
+            active_handlers = vec!(HandlerType::Calendar, HandlerType::Nfc, HandlerType::Vpn);
         }
         None => 
         {
@@ -50,9 +60,20 @@ pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
         {
             HandlerType::Calendar =>
             {
-                let path = config.sockets_path.clone();
                 thread_pool.push(thread::spawn(move || {
-                    calendar::start_listener(path);
+                    calendar::start_listener();
+                }));
+            },
+            HandlerType::Nfc =>
+            {
+                thread_pool.push(thread::spawn(move || {
+                    nfc::start_listener();
+                }));
+            },
+            HandlerType::Vpn =>
+            {
+                thread_pool.push(thread::spawn(move || {
+                    vpn::start_listener();
                 }));
             }
             HandlerType::All =>
@@ -62,33 +83,43 @@ pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
         }
     }
 
-    thread::sleep(time::Duration::from_secs(1));
-
-    let c: LocalSocketStream = match LocalSocketStream::connect("/tmp/quiver.calendar.sock")
-    {
-        Ok(connection) => {
-            connection
-        }
-        Err(e) => 
-        {
-            panic!("{e}");
-        }
+    let item = shared::calendar::CalendarItem{
+        title: "SomeItem".to_owned(),
+        start: match DateTime::from_str("2022-09-24T12:00:00Z"){
+            Ok(val) => val,
+            Err(e) => panic!("{e}"),
+        },
+        end: match DateTime::from_str("2022-09-24T14:00:00Z"){
+            Ok(val) => val,
+            Err(e) => panic!("{e}"),
+        },
+        guests: (),
+        location: shared::location::Location{
+            common_name: "SomePlace".to_owned(),
+            coordinate: shared::location::Coordinate {
+                latitude: 5.0,
+                lontitude: 6.0,
+                altitude: 7.0,
+            },
+            address: "SomeAddress".to_owned(),
+        },
+        description: "An Event".to_owned(),
+        // Attachments will link to either a sharing link or local file.
+        // Sharing links will be visible to all with permissions to read
+        // it. Maybe add something that automatically offers to add permissions to guests.
+        // Local file will only be available to owner. Maybe add automatic generation
+        // of a sharing link eg. local_file->upload_to_cloud->generate_link
+        attachments: (),
+        // Action will link to some action from another interface eg. Call, meeting link etc..
+        action: (),
+        // Guests will be a link to INS or contact or something
+        owner: ()
     };
-    
-    let mut connection_writer = BufWriter::new(c);
 
-    match bincode::serialize_into(&mut connection_writer, &request::Action::Put)
-    {
-        Ok(_b) => 
-        {
-            connection_writer.flush().unwrap();
-            println!("Sent...");
-        }
-        Err(e) =>
-        {
-            panic!("{e}");
-        }
-    };
+    dbg!(&item);
+
+    let res = client::consumer::calendar::push(item);
+    dbg!(res);
 
     thread::sleep(time::Duration::from_secs(1));
 

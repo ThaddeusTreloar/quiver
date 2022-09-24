@@ -15,9 +15,9 @@ use crate::{
         lib::{
             request::{
                 FunctionArgTypes,
-                VPN,
+                NFC,
                 Action
-            }
+            },
         }
     }
 };
@@ -30,39 +30,48 @@ use serde::{
     Deserialize
 };
 
-
 #[derive(Debug)]
-struct VpnManager {
-    name: String
-}
-
-#[derive(Debug)]
-struct VpnConfig {
+struct NfcFunction {
     name: String,
-    path: String
+    args: Vec<(String, FunctionArgTypes)>
 }
 
 #[derive(Debug)]
-enum Connection {
-    ConfigConnection(VpnConfig),
-    ConnectionManager(VpnManager)
+struct RsaKey {
+    name: String,
+    key: String
 }
 
 #[derive(Debug)]
-struct Vpn {
-    all_connections: Vec<Connection>,
-    common_connections: Vec<Connection>
+struct EccKey {
+    name: String,
+    key: String
 }
 
-trait VpnActions
+#[derive(Debug)]
+struct NtruKey {
+    name: String,
+    key: String
+}
+
+#[derive(Debug)]
+enum NfcKey
 {
-    fn connect(connection: Connection) -> Result<u8, u8>;
-    fn disconnect(connection: Connection) -> Result<u8, u8>;
+    Rsa(RsaKey),
+    Ecc(EccKey),
+    NtruKey(NtruKey)
+}
+
+
+#[derive(Debug)]
+enum NfcWatcher {
+    Key(NfcKey),
+    Function(NfcFunction),
 }
 
 pub fn start_listener()
 {
-    listeners::af_local_listener(VPN.to_owned(), handle_connection);
+    listeners::af_local_listener(NFC.to_owned(), handle_connection);
 }
 
 fn handle_connection(conn: LocalSocketStream) -> ()

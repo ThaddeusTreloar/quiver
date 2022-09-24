@@ -22,7 +22,7 @@ pub fn af_local_listener(listen_address: String,
         }
     };
     
-    for conn in listener.incoming()
+    for mut conn in listener.incoming()
     {
         match conn
         {

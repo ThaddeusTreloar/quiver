@@ -3,6 +3,7 @@ mod security;
 mod handler;
 mod shared;
 use env_logger;
+mod client;
 
 fn main() {
     env_logger::init();

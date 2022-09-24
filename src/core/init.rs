@@ -38,6 +38,24 @@ pub fn init() -> CoreConfig {
             //dbg!(&e);
         }
     }
+    match remove_file("/tmp/quiver.vpn.sock")
+    {
+        Ok(_v) => (),
+        Err(e) =>
+        {
+            ()
+            //dbg!(&e);
+        }
+    }
+    match remove_file("/tmp/quiver.nfc.sock")
+    {
+        Ok(_v) => (),
+        Err(e) =>
+        {
+            ()
+            //dbg!(&e);
+        }
+    }
 
     config
 }
