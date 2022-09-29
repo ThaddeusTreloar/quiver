@@ -7,10 +7,14 @@ autobins = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-confy = "0.5.0"
 serde = { version = "1.0.144", features = ["derive"] }
 chrono = { version = "0.4.22", features = ["serde"] }
+openssl = { version = "0.10.42", features = ["vendored"] }
+diesel = { version = "2.0.0", features = ["sqlite", "serde_json", "chrono"] }
+confy = "0.5.0"
 interprocess = "1.1.1"
 env_logger = "0.9.1"
 log = "0.4.17"
 bincode = "1.3.3"
+rand = "0.8.5"
+rand_chacha = "0.3.1"

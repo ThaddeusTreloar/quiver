@@ -13,10 +13,8 @@ use crate::{
     shared::{
         calendar::CalendarItem,
         lib::{
-            request::{
-                CALENDAR,
-                Action
-            }
+            CALENDAR,
+            Action
         }
     }
 };
@@ -122,7 +120,7 @@ fn handle_put_connection(mut connection:  LocalSocketStream, _db: &mut ()) -> Re
         Err(e) => return Err("{e}"),
     };
 
-    dbg!(item);
+    //dbg!(item);
 
     Ok(())
 }

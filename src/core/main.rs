@@ -1,9 +1,13 @@
-use crate::shared::lib::request::{
+use crate::shared::lib::{
     HandlerType,
     Action
 };
 use crate::handler::*;
-use crate::core::config::CoreConfig;
+use crate::core::{
+    db,
+    config::CoreConfig,
+    permission,
+};
 use interprocess::local_socket::{
     LocalSocketStream
 };
@@ -115,10 +119,9 @@ pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
         // Guests will be a link to INS or contact or something
         owner: ()
     };
-
-    dbg!(&item);
-
     let res = client::consumer::calendar::push(item);
+    //dbg!(res);
+    
     dbg!(res);
 
     thread::sleep(time::Duration::from_secs(1));

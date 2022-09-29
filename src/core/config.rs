@@ -1,5 +1,5 @@
 extern crate confy;
-use crate::shared::lib::request::HandlerType;
+use crate::shared::lib::HandlerType;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]

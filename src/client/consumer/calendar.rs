@@ -12,10 +12,8 @@ use log::{
 use crate::shared::{
     calendar::CalendarItem,
     lib::{
-        request::{
-            Action::*,
-            CALENDAR,
-        }
+        Action::*,
+        CALENDAR,
     }
 };
 use interprocess::local_socket::{
@@ -39,15 +37,12 @@ pub fn push(item: CalendarItem) -> Result<(), &'static str>
         }
     };
 
-    match serialize_into(&mut connection, &Put) {
-        Ok(_ok) => (),
-        Err(e) => 
-        {
-            return Err("Failed to write request::PUT to {CALENDAR} due to: {e}");
-        }
+    if let Err(e)  = serialize_into(&mut connection, &Put) {
+        let err = format_args!("Failed to write request::PUT to {CALENDAR} due to: {e}");
+        return Err("Failed to write request::PUT to {CALENDAR} due to: {e}");
     };
 
-    let mut buffer: [u8; 4] = [b"0"[0]; 4];
+    let mut buffer: [u8; 4] = [0u8; 4];
 
     match connection.read_exact(&mut buffer)
     {
@@ -74,4 +69,24 @@ pub fn push(item: CalendarItem) -> Result<(), &'static str>
         Ok(_ok) => return Ok(()),
         Err(e) => return Err("Error while sending caleendar_item during PUT. Failed due to: {e}"),
     }
+}
+
+
+/*
+todo rework
+*/
+
+fn connect() -> ()
+{
+    ()
+} 
+
+fn push_single(item: CalendarItem) -> Result<(), &'static str>
+{
+    Ok(())
+}
+
+fn _push(connection: LocalSocketStream, item: CalendarItem) -> Result<(), &'static str>
+{
+    Ok(())
 }

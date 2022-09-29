@@ -5,6 +5,29 @@ use serde::{
 use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum PermissionState
+{
+    Read,
+    Write,
+    ReadWrite
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Permission {
+    state: PermissionState,
+    service: HandlerType,
+    include: Vec<String>
+}
+
+// Will add key types to enum wrapper
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PubKey {
+    Ecc(()), 
+    Ntru(()), 
+    Rsa(()),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
     Null,
     Get,
@@ -40,6 +63,7 @@ pub enum HandlerType {
     Nfc
 } 
 
+// For constructing function call interfaces into a thirdpary service
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FunctionArgTypes
 {

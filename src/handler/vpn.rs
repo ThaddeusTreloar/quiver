@@ -13,11 +13,9 @@ use crate::{
     handler::lib::listeners,
     shared::{
         lib::{
-            request::{
-                FunctionArgTypes,
-                VPN,
-                Action
-            }
+            FunctionArgTypes,
+            VPN,
+            Action
         }
     }
 };
