@@ -29,7 +29,7 @@ fn someFunc() -> ()
     let key = EcKey::from_public_key(&group, &point);
 }
 
-fn create_schema()
+/*fn create_schema()
 {
     diesel::table! {
         services {
@@ -39,7 +39,7 @@ fn create_schema()
             key ->      Binary
         }
     }
-}
+}*/
 
 fn register_service(
     name: String, 

@@ -16,16 +16,16 @@ use rand::prelude::*;
 use rand_chacha::ChaChaRng;
 
 
-fn identify(key: PKey<Public>, connection: LocalSocketStream) -> Result<bool, &'static str>
+fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool, &'static str>
 {
     // todo: check this has enough entropy
-    let rng_ctx = match ChaChaRng::from_rng(rand::thread_rng())
+    let mut rng_ctx = match ChaChaRng::from_rng(rand::thread_rng())
     {
         Ok(ccr) => ccr,
         Err(e) => return Err("Failed to initialise RNG due to: {e}")
     };
 
-    let mut rand_bytes: [u8; 512];
+    let mut rand_bytes: [u8; 512] = [0u8; 512];
     rng_ctx.fill(&mut rand_bytes);
     let enc = match Encrypter::new(key.as_ref())
     {
