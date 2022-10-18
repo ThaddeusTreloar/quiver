@@ -1,0 +1,8 @@
+CREATE TABLE services (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR UNIQUE NOT NULL,
+    perm BINARY NOT NULL,
+    exclude BINARY NOT NULL,
+    key_x BINARY UNIQUE NOT NULL,
+    key_y BINARY UNIQUE NOT NULL
+)

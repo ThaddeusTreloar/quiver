@@ -26,7 +26,6 @@ use bincode::{
 
 pub fn push(item: CalendarItem) -> Result<(), &'static str>
 {
-
     let mut connection: LocalSocketStream = match LocalSocketStream::connect(CALENDAR)
     {
         Ok(connection) => connection,

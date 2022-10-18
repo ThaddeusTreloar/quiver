@@ -1,8 +1,13 @@
 extern crate confy;
-use crate::core::config::CoreConfig;
+use crate::{
+    core::{
+    config::CoreConfig,
+    db::init_database,
+    },
+};
 use std::fs::remove_file;
 
-pub fn init() -> CoreConfig {
+pub fn init<'a>() -> CoreConfig<'a> {
     let config: CoreConfig = match confy::load("quiver", None) {
         Ok(config) => {
             println!("Config Loaded...");
@@ -26,6 +31,9 @@ pub fn init() -> CoreConfig {
         }
 
     };
+
+    init_database(config.core_db_path);
+
 
     // todo match on error kinds. Also, once std::fs::try_exists()
     // is pulled into stable, add that.

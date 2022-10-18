@@ -18,6 +18,7 @@ pub struct Permission {
     service: HandlerType,
     include: Vec<String>
 }
+use openssl::nid::Nid;
 
 // Will add key types to enum wrapper
 #[derive(Debug, Serialize, Deserialize)]
@@ -76,3 +77,7 @@ pub enum FunctionArgTypes
 pub const CALENDAR: &'static str = "/tmp/quiver.calendar.sock";
 pub const NFC: &'static str = "/tmp/quiver.nfc.sock";
 pub const VPN: &'static str = "/tmp/quiver.vpn.sock";
+
+
+
+pub const AUTH_KEY_ALGORITHM: &Nid = &Nid::SECP384R1;
