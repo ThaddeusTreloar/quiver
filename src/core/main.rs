@@ -87,79 +87,8 @@ pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
         }
     }
 
-    
+    println!("Initialisation Ok. Server Started...");
 
+    thread_pool.remove(0).join().unwrap();
     return Ok(1);
-}
-
-#[cfg(test)]
-mod test
-{
-    use interprocess::local_socket::{
-        LocalSocketStream
-    };
-    use log::{
-        error,
-        warn
-    };
-    use std::{
-        thread,
-        time,
-        io::{
-        prelude::*, 
-        BufWriter
-    }};
-    use bincode;
-    use crate::client;
-    
-    use crate::shared;
-    use chrono::{
-        DateTime,
-        offset
-    };
-    use std::str::FromStr;
-
-    fn try_calendar_connection()
-    {
-        thread::sleep(time::Duration::from_secs(1));
-
-        let item = shared::calendar::CalendarItem{
-            title: "SomeItem".to_owned(),
-            start: match DateTime::from_str("2022-09-24T12:00:00Z"){
-                Ok(val) => val,
-                Err(e) => panic!("{e}"),
-            },
-            end: match DateTime::from_str("2022-09-24T14:00:00Z"){
-                Ok(val) => val,
-                Err(e) => panic!("{e}"),
-            },
-            guests: (),
-            location: shared::location::Location{
-                common_name: "SomePlace".to_owned(),
-                coordinate: shared::location::Coordinate {
-                    latitude: 5.0,
-                    lontitude: 6.0,
-                    altitude: 7.0,
-                },
-                address: "SomeAddress".to_owned(),
-            },
-            description: "An Event".to_owned(),
-            // Attachments will link to either a sharing link or local file.
-            // Sharing links will be visible to all with permissions to read
-            // it. Maybe add something that automatically offers to add permissions to guests.
-            // Local file will only be available to owner. Maybe add automatic generation
-            // of a sharing link eg. local_file->upload_to_cloud->generate_link
-            attachments: (),
-            // Action will link to some action from another interface eg. Call, meeting link etc..
-            action: (),
-            // Guests will be a link to INS or contact or something
-            owner: ()
-        };
-        let res = client::consumer::calendar::push(item);
-        //dbg!(res);
-        
-        dbg!(res);
-
-        thread::sleep(time::Duration::from_secs(1));
-    }
 }
