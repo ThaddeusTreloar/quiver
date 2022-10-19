@@ -25,6 +25,7 @@ use bincode::{
 use interprocess::local_socket::{
     LocalSocketStream
 };
+use failure::Error;
 
 pub fn start_listener()
 {
@@ -95,32 +96,18 @@ fn _handler_get_connection(_conn: LocalSocketStream, _db: &())
 
 }
 
-fn handle_put_connection(mut connection:  LocalSocketStream, _db: &mut ()) -> Result<(), &'static str>
+fn handle_put_connection(mut connection:  LocalSocketStream, _db: &mut ()) -> Result<(), Error>
 {
-    match serialize_into(&mut connection, &Action::Ready) {
-        Ok(_ok) => (),
-        Err(e) => return Err("{e}"),
-    }
+    serialize_into(&mut connection, &Action::Ready)?;
 
     let mut buffer: Vec<u8> = Vec::new();
 
     // todo: Potentially unsafe.
-    match connection.read_to_end(&mut buffer)
-    {
-        Ok(_l) => (),
-        Err(e) =>
-        {
-            return Err("{e}");
-        }
-    };
+    connection.read_to_end(&mut buffer)?;
 
-    let item: CalendarItem = match deserialize(&buffer[..buffer.len()])
-    {
-        Ok(item) => item,
-        Err(e) => return Err("{e}"),
-    };
+    let item: CalendarItem = deserialize(&buffer[..buffer.len()])?;
 
-    //dbg!(item);
+    // Add to db
 
     Ok(())
 }

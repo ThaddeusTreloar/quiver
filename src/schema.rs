@@ -6,7 +6,6 @@ diesel::table! {
         name -> Text,
         perm -> Binary,
         exclude -> Binary,
-        key_x -> Binary,
-        key_y -> Binary,
+        pubkey -> Binary,
     }
 }

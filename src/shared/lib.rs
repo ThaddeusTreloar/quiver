@@ -14,9 +14,9 @@ pub enum PermissionState
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Permission {
-    state: PermissionState,
-    service: HandlerType,
-    include: Vec<String>
+    pub state: PermissionState,
+    pub service: HandlerType,
+    pub include: Vec<String>
 }
 use openssl::nid::Nid;
 

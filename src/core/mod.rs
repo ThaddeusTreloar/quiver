@@ -1,5 +1,5 @@
 pub mod config;
 pub mod init;
 pub mod main;
-mod db;
+pub mod db;
 mod permission;

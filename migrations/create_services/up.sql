@@ -3,6 +3,5 @@ CREATE TABLE services (
     name VARCHAR UNIQUE NOT NULL,
     perm BINARY NOT NULL,
     exclude BINARY NOT NULL,
-    key_x BINARY UNIQUE NOT NULL,
-    key_y BINARY UNIQUE NOT NULL
+    pubkey BINARY NOT NULL
 )

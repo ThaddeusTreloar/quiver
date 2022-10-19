@@ -1,3 +1,4 @@
+
 mod core;
 mod security;
 mod handler;
@@ -13,9 +14,6 @@ fn main() {
         Err(_err) => unimplemented!(),
     }
 }
-
-
-
 
 #[test]
 fn send_item()
@@ -53,4 +51,68 @@ fn send_item()
 
     let res = client::consumer::calendar::push(item);
     assert_eq!(res, Ok(()));
+}
+
+#[test]
+
+fn sql_request()
+{
+    use crate::core::db::db;
+
+    let mut conn = db::establish_connection("run/core.sqlite").unwrap();
+
+    match db::get_all_services(&mut conn)
+    {
+        Ok(val) => {
+            dbg!(val);
+            assert!(true);
+            return;
+        }
+        Err(e) =>
+        {
+            dbg!(e);
+            assert!(false);
+            return;
+        }
+    };
+}
+
+#[test]
+fn sql_add_service()
+{
+    use crate::core::db::db;
+    use crate::shared::lib::*;
+    use openssl::{
+        ec::{
+            EcKey,
+            EcGroup,
+            PointConversionForm
+        },
+        bn::{
+            BigNumContext
+        }
+    };
+
+    let mut connection = db::establish_connection("run/core.sqlite").unwrap();
+
+    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
+    let key = EcKey::generate(&group).unwrap();
+    let pubkey = EcKey::from_public_key(
+        &group,
+        key.public_key()
+    ).unwrap();
+
+    if let Err(_e) = db::register_service(
+        "test".to_owned(),
+        Box::new(vec![Permission{
+            state: PermissionState::ReadWrite,
+            service: HandlerType::Calendar,
+            include: vec!["All".to_owned()]
+        }]),
+        Box::new(vec![]),
+        pubkey,
+        &mut connection
+    ) {
+        assert!(false);
+    };
 }

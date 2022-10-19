@@ -1,23 +1,27 @@
 use quiver;
-use chrono::{
-    DateTime,
-    offset
-};
 
 #[test]
 fn send_item()
 {
-    let item = quiver::shared::calendar::CalendarItem::{
+    use chrono::{
+        DateTime,
+        offset,
+    };
+    use quiver::{
+        shared,
+        client
+    };
+    let item = shared::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
-        start: DateTime<offset::Utc>::from_str("2022-09-24T12:00:00Z"),
-        end: DateTime<offset::Utc>::from_str("2022-09-24T14:00:00Z"),
+        start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
+        end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: quiver::shared::location::Location{
+        location: shared::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: quiver::shared::location::Coordinate {
-                latitude: 5,
-                lontitude: 6,
-                altitude: 7,
+            coordinate: shared::location::Coordinate {
+                latitude: 5.0,
+                lontitude: 6.0,
+                altitude: 7.0,
             },
             address: "SomeAddress".to_owned(),
         },
@@ -32,8 +36,9 @@ fn send_item()
         action: (),
         // Guests will be a link to INS or contact or something
         owner: ()
-    }
+    };
 
-    let res = quiver::client::consumer::push(item);
-    debug_assert!(res);
+    let res = client::consumer::calendar::push(item);
+    assert_eq!(res, Ok(()));
 }
+
