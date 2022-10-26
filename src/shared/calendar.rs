@@ -9,8 +9,6 @@ use chrono::{
     offset,
 };
 
-
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CalendarItem {
     pub title: String,

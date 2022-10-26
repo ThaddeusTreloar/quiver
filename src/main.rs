@@ -113,6 +113,7 @@ fn sql_add_service()
         pubkey,
         &mut connection
     ) {
+        dbg!(_e);
         assert!(false);
     };
 }
