@@ -5,13 +5,18 @@ use serde::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Fail)]
-pub enum SyncError
+pub enum ConnectionActionError
 {
     #[fail(display = "Expected '{}' got '{}' while waiting to '{}' item to '{}'.", expected, recieved, action, service)]
     UnexpectedActionError{
-        expected: &'static str,
-        recieved: &'static str,
-        action: &'static str,
-        service: &'static str
+        expected: String,
+        recieved: String,
+        action: String,
+        service: String,
+    },
+    #[fail(display = "'{}' not supported for '{}' service.", expected, service)]
+    UnsupportedActionError{
+        recieved: String,
+        service: String,
     },
 }

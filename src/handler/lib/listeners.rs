@@ -9,10 +9,11 @@ use log::{
     error,
     warn
 };
+use failure::Error;
 
 
 pub fn af_local_listener(listen_address: String, 
-    connection_handler: fn(connection: LocalSocketStream) -> ())
+    connection_handler: fn(connection: LocalSocketStream) -> Result<(), Error>)
 {
     let listener: LocalSocketListener = match LocalSocketListener::bind(listen_address){
         Ok(val) => val,

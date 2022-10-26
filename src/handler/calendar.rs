@@ -15,24 +15,26 @@ use crate::{
         lib::{
             CALENDAR,
             Action
-        }
+        },
+        error
     }
-};
-use bincode::{
-    deserialize,
-    serialize_into
+    
 };
 use interprocess::local_socket::{
     LocalSocketStream
 };
 use failure::Error;
+use serde_json::{
+    from_reader,
+    to_writer
+};
 
 pub fn start_listener()
 {
     listeners::af_local_listener(CALENDAR.to_owned(), handle_connection);
 }
 
-fn handle_connection(mut connection: LocalSocketStream) -> ()
+fn handle_connection(mut connection: LocalSocketStream) -> Result<(), Error>
 {
     let mut buffer: [u8; 4] = [b"0"[0]; 4];
 
@@ -50,17 +52,7 @@ fn handle_connection(mut connection: LocalSocketStream) -> ()
         }
     };
 
-    match connection.read_exact(&mut buffer)
-    {
-        Ok(_l) => (),
-        Err(e) =>
-        {
-            info!("Failed to read action due to: {e}\nClosing connection...");
-            return
-        }
-    };
-
-    match deserialize(&buffer)
+    match connection.from_reader(&mut connection)
     {
         Ok(connection_type) => 
         {
@@ -73,13 +65,20 @@ fn handle_connection(mut connection: LocalSocketStream) -> ()
                         Ok(_ok) => info!("Put action successful for pid: '{peer_pid}'."),
                         Err(e) => info!("Put action failed for pid: '{peer_pid}', due to: {e}"),
                     }
-                    return;
+                    return Ok(());
                 }
                 other =>
                 {
                     info!("Action {other} not supported for calendar client connection from 
                     '{peer_pid}'. Closing connection...");
-                    return;
+                    return Err(
+                        Error::from(
+                            error::ConnectionActionError::UnsupportedActionError{
+                                recieved: other.to_string(),
+                                service: "Calendar".to_owned(),
+                            }
+                        )
+                    );
                 }
             }
         }

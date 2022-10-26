@@ -15,7 +15,7 @@ use crate::shared::{
         Action,
         CALENDAR,
     },
-    error::SyncError
+    error::ConnectionActionError
 };
 use interprocess::local_socket::{
     LocalSocketStream
@@ -39,19 +39,25 @@ pub fn push(item: CalendarItem) -> Result<(), Error>
 
     match res
     {
-        Ready => (),
+        Action::Ready => (),
         other => {
             // todo: fix returning error.
-            return Err(SyncError::UnexpectedActionError{
-                expected: 'Ready',
-                recieved: other,
-                action: "Put",
-                service: "Calendar"
-            });
+            return Err(
+                Error::from(
+                    ConnectionActionError::UnexpectedActionError{
+                        expected: "Ready".to_owned(),
+                        recieved: other.to_string(),
+                        action: "Put".to_owned(),
+                        service: "Calendar".to_owned()
+                    }
+                )
+            );
         }
     };
 
     to_writer(&mut connection, &item)?;
+
+    Ok(())
 }
 
 
