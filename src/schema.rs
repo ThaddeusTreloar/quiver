@@ -4,8 +4,8 @@ diesel::table! {
     services (id) {
         id -> Nullable<Integer>,
         name -> Text,
-        perm -> Binary,
-        exclude -> Binary,
+        perm -> Text,
+        exclude -> Text,
         pubkey -> Binary,
     }
 }

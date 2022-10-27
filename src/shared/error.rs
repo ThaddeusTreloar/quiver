@@ -14,9 +14,22 @@ pub enum ConnectionActionError
         action: String,
         service: String,
     },
-    #[fail(display = "'{}' not supported for '{}' service.", expected, service)]
+    #[fail(display = "'{}' not supported for '{}' service.", recieved, service)]
     UnsupportedActionError{
         recieved: String,
         service: String,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug, Fail)]
+pub enum AuthenticationError
+{
+    #[fail(display = "'{}' failed authenticatoin for '{}' action for '{}' service.", client, action, service)]
+    ClientFailedAuthentication{
+        client: String,
+        action: String,
+        service: String,
+    },
+    #[fail(display = "Failed to authenticate.")]
+    AuthenticationFailed,
 }

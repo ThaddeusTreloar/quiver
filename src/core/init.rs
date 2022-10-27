@@ -2,7 +2,6 @@ use confy;
 use crate::{
     core::{
     config::CoreConfig,
-    db::db::init_database,
     },
 };
 use std::fs::remove_file;

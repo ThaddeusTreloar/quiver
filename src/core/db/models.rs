@@ -18,9 +18,9 @@ pub struct ServiceAdd
 {
     pub name: String,
     // Serialised Vec of Permission
-    pub perm: Vec<u8>,
+    pub perm: String,
     // Serialised Vec of HandlerType
-    pub exclude: Vec<u8>,
+    pub exclude: String,
     // Serialised bytes from EcKey<Public>
     pub pubkey: Vec<u8>,
 }
@@ -32,9 +32,9 @@ pub struct ServiceQuery
     pub id: i32,
     pub name: String,
     // Serialised Vec of Permission
-    pub perm: Vec<u8>,
+    pub perm: String,
     // Serialised Vec of HandlerType
-    pub exclude: Vec<u8>,
+    pub exclude: String,
     // Serialised bytes from EcKey<Public>
     pub pubkey: Vec<u8>,
 }

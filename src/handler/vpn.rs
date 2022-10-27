@@ -14,7 +14,7 @@ use crate::{
     shared::{
         lib::{
             FunctionArgTypes,
-            VPN,
+            VPN_SOCKET_ADDR,
             Action
         }
     }
@@ -60,7 +60,7 @@ trait VpnActions
 
 pub fn start_listener()
 {
-    listeners::af_local_listener(VPN.to_owned(), handle_connection);
+    listeners::af_local_listener(VPN_SOCKET_ADDR.to_owned(), handle_connection);
 }
 
 fn handle_connection(conn: LocalSocketStream) -> ()

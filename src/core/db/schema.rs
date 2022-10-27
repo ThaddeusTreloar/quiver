@@ -3,9 +3,9 @@ diesel::table! {
 
     services {
         id -> Integer,
-        name ->     VarChar,
-        perm ->     Binary,
-        exclude ->  Binary,
+        name ->     Text,
+        perm ->     Text,
+        exclude ->  Text,
         pubkey ->      Binary,
     }
 }

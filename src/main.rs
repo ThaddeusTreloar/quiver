@@ -4,10 +4,16 @@ mod security;
 mod handler;
 mod shared;
 use env_logger;
+use log::LevelFilter;
 mod client;
 
 fn main() {
-    env_logger::init();
+    let mut log_builder = env_logger::Builder::from_default_env();
+    log_builder
+        .filter_level(LevelFilter::Info)
+        .target(env_logger::Target::Stdout)
+        .init();
+    
     let config: core::config::CoreConfig = core::init::init();
     match core::main::main(config) {
         Ok(_val) => return,
@@ -50,12 +56,17 @@ fn send_item()
     };
 
     let res = client::consumer::calendar::push(item);
-    assert_eq!(res, Ok(()));
+
+    if let Ok(()) = res {
+        assert!(true);
+    } else {
+        assert!(false);
+    }
 }
 
 #[test]
 
-fn sql_request()
+fn sql_request_all()
 {
     use crate::core::db::db;
 
@@ -78,10 +89,12 @@ fn sql_request()
 }
 
 #[test]
-fn sql_add_service()
+
+fn sql_create_filter_delete()
 {
     use crate::core::db::db;
     use crate::shared::lib::*;
+    use crate::client::permission;
     use openssl::{
         ec::{
             EcKey,
@@ -116,4 +129,28 @@ fn sql_add_service()
         dbg!(_e);
         assert!(false);
     };
+
+    /*if let Err(_e) = db::update_service("test".to_owned(), 
+        service_perm: Box<Vec<Permission>>, 
+        service_exclude: Box<Vec<HandlerType>>, 
+        connection)
+    {
+        
+    };*/
+
+    if let Err(_e) = db::get_service("test".to_owned(), &mut connection)
+    {
+        dbg!(_e);
+        assert!(false);
+    };
+
+    if let Err(_e) = db::remove_service("test".to_owned(), &mut connection)
+    {
+        dbg!(_e);
+        assert!(false);
+    };
 }
+
+
+
+

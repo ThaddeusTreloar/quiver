@@ -14,7 +14,7 @@ use crate::{
     shared::{
         lib::{
             FunctionArgTypes,
-            NFC,
+            NFC_SOCKET_ADDR,
             Action
         }
     }
@@ -69,7 +69,7 @@ enum NfcWatcher {
 
 pub fn start_listener()
 {
-    listeners::af_local_listener(NFC.to_owned(), handle_connection);
+    listeners::af_local_listener(NFC_SOCKET_ADDR.to_owned(), handle_connection);
 }
 
 fn handle_connection(conn: LocalSocketStream) -> ()

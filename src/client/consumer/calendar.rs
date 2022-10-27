@@ -13,7 +13,7 @@ use crate::shared::{
     calendar::CalendarItem,
     lib::{
         Action,
-        CALENDAR,
+        CALENDAR_SOCKET_ADDR,
     },
     error::ConnectionActionError
 };
@@ -24,18 +24,22 @@ use serde_json::{
     Value,
     from_str,
     from_reader,
-    to_writer
+    to_writer,
+    Deserializer,
+    Serializer
 };
-use serde::de;
+use serde::Deserialize;
 use failure::Error;
 
 pub fn push(item: CalendarItem) -> Result<(), Error>
 {
-    let mut connection: LocalSocketStream = LocalSocketStream::connect(CALENDAR)?;
+    let mut connection: LocalSocketStream = LocalSocketStream::connect(CALENDAR_SOCKET_ADDR)?;
 
     to_writer(&mut connection, &Action::Put)?;
 
-    let res: Action = from_reader(&mut connection)?;
+    let mut deser = Deserializer::from_reader(&mut connection);
+
+    let res: Action = Action::deserialize(&mut deser)?;
 
     match res
     {

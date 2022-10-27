@@ -16,7 +16,7 @@ use openssl::{
 use interprocess::local_socket::LocalSocketStream;
 use rand::prelude::*;
 use rand_chacha::ChaChaRng;
-
+use serde_json::to_writer;
 
 fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool, std::io::Error>
 {
@@ -28,7 +28,6 @@ fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool
 
     connection.write_all(&rand_bytes)?;
 
-    
     let mut verifier: Verifier = Verifier::new_without_digest(&key)?;
     verifier.update(&rand_bytes)?;
     let mut response: Vec<u8> = vec![0u8];
@@ -38,5 +37,7 @@ fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool
 
     let verification: bool = verifier.verify(&response)?;
 
+    to_writer(&mut connection, &verification)?;
+    
     Ok(verification)
 }

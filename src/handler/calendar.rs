@@ -13,7 +13,7 @@ use crate::{
     shared::{
         calendar::CalendarItem,
         lib::{
-            CALENDAR,
+            CALENDAR_SOCKET_ADDR,
             Action
         },
         error
@@ -26,18 +26,18 @@ use interprocess::local_socket::{
 use failure::Error;
 use serde_json::{
     from_reader,
-    to_writer
+    to_writer,
+    Deserializer,
 };
+use serde::Deserialize;
 
 pub fn start_listener()
 {
-    listeners::af_local_listener(CALENDAR.to_owned(), handle_connection);
+    listeners::af_local_listener(CALENDAR_SOCKET_ADDR.to_owned(), handle_connection);
 }
 
-fn handle_connection(mut connection: LocalSocketStream) -> Result<(), Error>
+fn handle_connection(mut connection: LocalSocketStream) -> ()
 {
-    let mut buffer: [u8; 4] = [b"0"[0]; 4];
-
     let peer_pid: String = match connection.peer_pid() 
     {
         Ok(peer_id) => 
@@ -52,7 +52,9 @@ fn handle_connection(mut connection: LocalSocketStream) -> Result<(), Error>
         }
     };
 
-    match connection.from_reader(&mut connection)
+    let mut deser = Deserializer::from_reader(&mut connection);
+
+    match Action::deserialize(&mut deser)
     {
         Ok(connection_type) => 
         {
@@ -60,25 +62,19 @@ fn handle_connection(mut connection: LocalSocketStream) -> Result<(), Error>
             {
                 Action::Put => 
                 {
+                    info!("Handling Put connection for client {peer_pid}");
                     match handle_put_connection(connection, &mut ())
                     {
                         Ok(_ok) => info!("Put action successful for pid: '{peer_pid}'."),
                         Err(e) => info!("Put action failed for pid: '{peer_pid}', due to: {e}"),
                     }
-                    return Ok(());
+                    return;
                 }
                 other =>
                 {
                     info!("Action {other} not supported for calendar client connection from 
                     '{peer_pid}'. Closing connection...");
-                    return Err(
-                        Error::from(
-                            error::ConnectionActionError::UnsupportedActionError{
-                                recieved: other.to_string(),
-                                service: "Calendar".to_owned(),
-                            }
-                        )
-                    );
+                    return;
                 }
             }
         }
@@ -97,16 +93,12 @@ fn _handler_get_connection(_conn: LocalSocketStream, _db: &())
 
 fn handle_put_connection(mut connection:  LocalSocketStream, _db: &mut ()) -> Result<(), Error>
 {
-    serialize_into(&mut connection, &Action::Ready)?;
+    to_writer(&mut connection, &Action::Ready)?;
 
-    let mut buffer: Vec<u8> = Vec::new();
+    let i: CalendarItem = from_reader(&mut connection)?;
 
-    // todo: Potentially unsafe.
-    connection.read_to_end(&mut buffer)?;
-
-    let item: CalendarItem = deserialize(&buffer[..buffer.len()])?;
-
-    // Add to db
+    dbg!(i);
+    // Cache/forward
 
     Ok(())
 }

@@ -2,7 +2,20 @@ use serde::{
     Serialize,
     Deserialize,
 };
+use interprocess::local_socket::LocalSocketStream;
 use std::fmt;
+use failure::Error;
+use openssl::{
+    pkey::Public,
+    ec::{
+        EcKey,
+        EcGroup,
+        PointConversionForm,
+    },
+    bn::BigNumContext,
+    nid::Nid
+};
+use serde_json::Deserializer;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PermissionState
@@ -18,15 +31,28 @@ pub struct Permission {
     pub service: HandlerType,
     pub include: Vec<String>
 }
-use openssl::nid::Nid;
 
 // Will add key types to enum wrapper
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PubKey {
-    Ecc(()), 
+    Ecc(()),
     Ntru(()), 
     Rsa(()),
 }
+
+pub fn serialize_pubkey(key: EcKey<Public>) -> Result<Vec<u8>, Error>
+{
+    let pub_key = key.public_key();
+    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM)?;
+    let mut ctx = BigNumContext::new()?;
+    let bytes = pub_key.to_bytes(
+        &group,
+        PointConversionForm::COMPRESSED, 
+        &mut ctx
+    )?;
+    Ok(bytes)
+}
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
@@ -74,9 +100,19 @@ pub enum FunctionArgTypes
 
 }
 
-pub const CALENDAR: &'static str = "/tmp/quiver.calendar.sock";
-pub const NFC: &'static str = "/tmp/quiver.nfc.sock";
-pub const VPN: &'static str = "/tmp/quiver.vpn.sock";
+pub fn from_reader<'a, T>(connection: &mut LocalSocketStream) -> Result<T, Error>
+where
+    T: Deserialize<'a>
+{
+    let mut deser = Deserializer::from_reader(&mut connection);
+    let res = T::deserialize(&mut deser)?;
+    Ok(res)
+}
+
+pub const SERVICE_MANAGER_SOCKET_ADDR: &'static str = "/tmp/quiver.service_manager.sock";
+pub const CALENDAR_SOCKET_ADDR: &'static str = "/tmp/quiver.calendar.sock";
+pub const NFC_SOCKET_ADDR: &'static str = "/tmp/quiver.nfc.sock";
+pub const VPN_SOCKET_ADDR: &'static str = "/tmp/quiver.vpn.sock";
 
 
 

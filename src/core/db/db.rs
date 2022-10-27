@@ -1,7 +1,7 @@
 use crate::shared::lib::{
     Permission,
     HandlerType,
-    AUTH_KEY_ALGORITHM,
+    serialize_pubkey
 };
 use crate::core::db::{
     schema,
@@ -9,16 +9,12 @@ use crate::core::db::{
 };
 use crate::core::db::schema::services::dsl::*;
 
-
 use diesel::{
     prelude::*,
-    sqlite::{
-        SqliteConnection,
-        SqliteQueryBuilder
-    },
-    sql_types::VarChar,
+    sqlite::SqliteConnection,
     insert_into,
-    dsl::Eq,
+    delete,
+    update,
 };
 use openssl::{
     pkey::Public,
@@ -32,22 +28,10 @@ use openssl::{
         BigNum
     },
 };
-use bincode::{
-    serialize
+use serde_json::{
+    to_string,
 };
 use failure::Error;
-
-sql_function!(fn services_service_name(x: VarChar) -> VarChar);
-
-type WithName<'a> = Eq<services_service_name::HelperType<schema::services::name>, 
-                    services_service_name::HelperType<&'a str>>;
-
-fn with_name(searched_name: &str) -> WithName
-{
-    services_service_name(schema::services::name).eq(services_service_name(searched_name))
-}
-
-
 
 pub fn establish_connection(path: &str) -> Result<SqliteConnection, &str>
 {
@@ -59,24 +43,6 @@ pub fn establish_connection(path: &str) -> Result<SqliteConnection, &str>
             Err("Failed to establish db connection to {path} due to {e}")
         }
     }
-}
-
-// Huh?
-pub fn init_database(path: &str) -> Result<&str, &str>
-{
-    let db_connection = match SqliteConnection::establish(path)
-    {
-        Ok(db) => db,
-        Err(e) => 
-        {
-            dbg!(e);
-            return Err("{e}");
-        },
-    };
-
-    let table_chk: SqliteQueryBuilder = SqliteQueryBuilder::new();
-    Ok("")
-
 }
 
 pub fn get_all_services(
@@ -95,7 +61,14 @@ pub fn get_service(
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {
     let results = services
-        .filter(with_name(service_name.as_ref()))
+        .filter(
+            name.like(
+                format!(
+                    "%{}%",
+                    service_name
+                )
+            )
+        )
         .load::<ServiceQuery>(connection)?;
     
     Ok(results)
@@ -109,20 +82,11 @@ pub fn register_service(
     connection: &mut SqliteConnection
 ) -> Result<(), Error>
 {
-
-    let pub_key = service_key.public_key();
-    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
-    let mut ctx = BigNumContext::new().unwrap();
-
     let record: ServiceAdd = ServiceAdd {
         name: service_name,
-        perm: serialize(&service_perm)?,
-        exclude: serialize(&service_exclude)?,
-        pubkey: pub_key.to_bytes(
-            &group,
-            PointConversionForm::COMPRESSED, 
-            &mut ctx
-        )?,
+        perm: to_string(&service_perm)?,
+        exclude: to_string(&service_exclude)?,
+        pubkey: serialize_pubkey(service_key)?,
     };
     
     insert_into(services).values(record).execute(connection)?;
@@ -130,6 +94,112 @@ pub fn register_service(
     Ok(())
 }
 
+pub fn update_service_permissions(
+    service_name: String, 
+    service_perm: &Vec<Permission>, 
+    connection: &mut SqliteConnection
+) -> Result<(), Error>
+{
+    match update(services
+        .filter(
+            name.like(
+                format!(
+                    "%{}%",
+                    service_name
+                )
+            )
+        )
+    ).set(
+        perm.eq(
+            to_string(service_perm)?
+        )
+    ).execute(connection){
+        Ok(val) => {
+            if val != 1 {
+                return Err(failure::format_err!("{}", 
+                    diesel::result::Error::NotFound.to_string()
+                ));
+            } else {
+                return Ok(());
+            }
+        },
+        Err(e) => {
+            return Err(failure::format_err!("{}", 
+                e.to_string()
+            ));
+        },
+    };
+}
+
+pub fn update_service_exclusions(
+    service_name: String, 
+    service_exclude: &Vec<HandlerType>,
+    connection: &mut SqliteConnection
+) -> Result<(), Error>
+{
+    match update(services
+        .filter(
+            name.like(
+                format!(
+                    "%{}%",
+                    service_name
+                )
+            )
+        )
+    ).set(
+        exclude.eq(
+            to_string(service_exclude)?
+        )
+    ).execute(connection){
+        Ok(val) => {
+            if val != 1 {
+                return Err(failure::format_err!("{}", 
+                    diesel::result::Error::NotFound.to_string()
+                ));
+            } else {
+                return Ok(());
+            }
+        },
+        Err(e) => {
+            return Err(failure::format_err!("{}", 
+                e.to_string()
+            ));
+        },
+    };
+}
+
+pub fn remove_service(
+    service_name: String,
+    connection: &mut SqliteConnection,
+) -> Result<(), Error>
+{
+    match delete(
+        services
+        .filter(
+            name.like(
+                format!(
+                    "%{}%",
+                    service_name
+                )
+            )
+        )
+    ).execute(connection){
+        Ok(val) => {
+            if val != 1 {
+                return Err(failure::format_err!("{}", 
+                    diesel::result::Error::NotFound.to_string()
+                ));
+            } else {
+                return Ok(());
+            }
+        },
+        Err(e) => {
+            return Err(failure::format_err!("{}", 
+                e.to_string()
+            ));
+        },
+    };
+}
 
 /*fn validate_service_permission(
     name: String, 
