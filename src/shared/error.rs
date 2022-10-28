@@ -24,7 +24,7 @@ pub enum ConnectionActionError
 #[derive(Serialize, Deserialize, Debug, Fail)]
 pub enum AuthenticationError
 {
-    #[fail(display = "'{}' failed authenticatoin for '{}' action for '{}' service.", client, action, service)]
+    #[fail(display = "'{}' failed authentication for '{}' action for '{}' service.", client, action, service)]
     ClientFailedAuthentication{
         client: String,
         action: String,
@@ -32,4 +32,17 @@ pub enum AuthenticationError
     },
     #[fail(display = "Failed to authenticate.")]
     AuthenticationFailed,
+}
+
+#[derive(Serialize, Deserialize, Debug, Fail)]
+pub enum AuthorizationError
+{
+    #[fail(display = "'{}' failed authorization for '{}' action for '{}' service.", client, action, service)]
+    ClientFailedAuthorization{
+        client: String,
+        action: String,
+        service: String,
+    },
+    #[fail(display = "Failed to authorize.")]
+    AuthorizationFailed,
 }

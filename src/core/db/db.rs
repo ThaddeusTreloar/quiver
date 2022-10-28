@@ -55,7 +55,7 @@ pub fn get_all_services(
     Ok(results)
 }
 
-pub fn get_service(
+pub fn search_service(
     service_name: String,
     connection: &mut SqliteConnection
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
@@ -63,6 +63,25 @@ pub fn get_service(
     let results = services
         .filter(
             name.like(
+                format!(
+                    "%{}%",
+                    service_name
+                )
+            )
+        )
+        .load::<ServiceQuery>(connection)?;
+    
+    Ok(results)
+}
+
+pub fn get_service(
+    service_name: String,
+    connection: &mut SqliteConnection
+) -> Result<Vec<super::models::ServiceQuery>, Error>
+{
+    let results = services
+        .filter(
+            name.eq(
                 format!(
                     "%{}%",
                     service_name

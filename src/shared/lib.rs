@@ -56,12 +56,10 @@ pub fn serialize_pubkey(key: EcKey<Public>) -> Result<Vec<u8>, Error>
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
-    Null,
     Get,
     Put,
     Pop,
     Edit,
-    Ready
 }
 
 impl fmt::Display for Action
@@ -70,12 +68,10 @@ impl fmt::Display for Action
     {
         let action_str: &'static str = match *self
         {
-            Action::Null => "null",
             Action::Get => "get",
             Action::Put => "put",
             Action::Pop => "pop",
             Action::Edit => "edit",
-            Action::Ready => "ready",
         };
         write!(f, "{action_str}")?;
         Ok(())
@@ -104,7 +100,7 @@ pub fn from_reader<'a, T>(connection: &mut LocalSocketStream) -> Result<T, Error
 where
     T: Deserialize<'a>
 {
-    let mut deser = Deserializer::from_reader(&mut connection);
+    let mut deser = Deserializer::from_reader(connection);
     let res = T::deserialize(&mut deser)?;
     Ok(res)
 }

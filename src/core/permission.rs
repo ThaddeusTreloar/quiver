@@ -11,7 +11,6 @@ use openssl::{
     sign::{
         Verifier
     },
-    error::ErrorStack
 };
 use interprocess::local_socket::LocalSocketStream;
 use rand::prelude::*;

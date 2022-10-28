@@ -32,7 +32,7 @@ use chrono::{
 };
 use std::str::FromStr;
 
-pub fn main<'cfg_lifetime>(config: CoreConfig) -> Result<i8, i8> {
+pub fn main(config: CoreConfig) -> Result<i8, i8> {
     
     let active_handlers: Vec<HandlerType>;
     // Need to confirm that the vec is less than usize::MAX and resize accordingly

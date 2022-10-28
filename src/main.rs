@@ -150,7 +150,3 @@ fn sql_create_filter_delete()
         assert!(false);
     };
 }
-
-
-
-

@@ -2,13 +2,17 @@
 use super::lib::connect_identify_authorize;
 use crate::shared::lib::{
     HandlerType,
-    PermissionState,
+    Permissionitem,
     SERVICE_MANAGER_SOCKET_ADDR,
     Action,
     from_reader
 };
 //External
 use failure::Error;
+use serde::{
+    Serialize,
+    Deserialize
+};
 use openssl::{
     pkey::{
         Private,
@@ -23,7 +27,7 @@ pub fn transaction(
     service: &HandlerType,
     reference: Option<&PermissionState>,
     item: Option<&PermissionState>,
-    priv_key: &PKey<Private>,
+    priv_key: &PKey<Private>
     name: &String
 ) -> Result<PermissionState, Error>
 {
