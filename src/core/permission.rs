@@ -1,3 +1,7 @@
+// Internal
+use crate::shared::error::AuthenticationError;
+
+// External
 use std::{
     io::{
         prelude::*, 
@@ -17,7 +21,7 @@ use rand::prelude::*;
 use rand_chacha::ChaChaRng;
 use serde_json::to_writer;
 
-fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool, std::io::Error>
+fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<LocalSocketStream, std::io::Error>
 {
     // todo: check this has enough entropy
     let mut rng_ctx = ChaChaRng::from_rng(rand::thread_rng())?;
@@ -38,5 +42,12 @@ fn identify(key: PKey<Public>, mut connection: LocalSocketStream) -> Result<bool
 
     to_writer(&mut connection, &verification)?;
     
-    Ok(verification)
+    if verification { Ok(connection) } else { Err(
+        Error::from(
+            AuthenticationError::ClientFailedAuthentication{
+                
+            }
+        )
+    ) }
+    
 }

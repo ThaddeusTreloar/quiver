@@ -15,6 +15,10 @@ use diesel::{
     insert_into,
     delete,
     update,
+    r2d2::{
+        Pool,
+        ConnectionManager
+    }
 };
 use openssl::{
     pkey::Public,
@@ -33,31 +37,19 @@ use serde_json::{
 };
 use failure::Error;
 
-pub fn establish_connection(path: &str) -> Result<SqliteConnection, &str>
-{
-    match SqliteConnection::establish(path)
-    {
-        Ok(c) => Ok(c),
-        Err(e) =>
-        {
-            Err("Failed to establish db connection to {path} due to {e}")
-        }
-    }
-}
-
 pub fn get_all_services(
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {
     let results = services
-        .load::<ServiceQuery>(connection)?;
+        .load::<ServiceQuery>(&mut connection.get()?)?;
     
     Ok(results)
 }
 
 pub fn search_service(
     service_name: String,
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {
     let results = services
@@ -69,16 +61,17 @@ pub fn search_service(
                 )
             )
         )
-        .load::<ServiceQuery>(connection)?;
+        .load::<ServiceQuery>(&mut connection.get()?)?;
     
     Ok(results)
 }
 
 pub fn get_service(
     service_name: String,
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {
+    // Double check this only returns exact, whole matches. todo
     let results = services
         .filter(
             name.eq(
@@ -88,7 +81,7 @@ pub fn get_service(
                 )
             )
         )
-        .load::<ServiceQuery>(connection)?;
+        .load::<ServiceQuery>(&mut connection.get()?)?;
     
     Ok(results)
 }
@@ -98,7 +91,7 @@ pub fn register_service(
     service_perm: Box<Vec<Permission>>, 
     service_exclude: Box<Vec<HandlerType>>, 
     service_key: EcKey<Public>,
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<(), Error>
 {
     let record: ServiceAdd = ServiceAdd {
@@ -108,7 +101,7 @@ pub fn register_service(
         pubkey: serialize_pubkey(service_key)?,
     };
     
-    insert_into(services).values(record).execute(connection)?;
+    insert_into(services).values(record).execute(&mut connection.get()?)?;
     
     Ok(())
 }
@@ -116,7 +109,7 @@ pub fn register_service(
 pub fn update_service_permissions(
     service_name: String, 
     service_perm: &Vec<Permission>, 
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<(), Error>
 {
     match update(services
@@ -132,7 +125,7 @@ pub fn update_service_permissions(
         perm.eq(
             to_string(service_perm)?
         )
-    ).execute(connection){
+    ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
                 return Err(failure::format_err!("{}", 
@@ -153,7 +146,7 @@ pub fn update_service_permissions(
 pub fn update_service_exclusions(
     service_name: String, 
     service_exclude: &Vec<HandlerType>,
-    connection: &mut SqliteConnection
+    connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<(), Error>
 {
     match update(services
@@ -169,7 +162,7 @@ pub fn update_service_exclusions(
         exclude.eq(
             to_string(service_exclude)?
         )
-    ).execute(connection){
+    ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
                 return Err(failure::format_err!("{}", 
@@ -189,7 +182,7 @@ pub fn update_service_exclusions(
 
 pub fn remove_service(
     service_name: String,
-    connection: &mut SqliteConnection,
+    connection: &Pool<ConnectionManager<SqliteConnection>>,
 ) -> Result<(), Error>
 {
     match delete(
@@ -202,7 +195,7 @@ pub fn remove_service(
                 )
             )
         )
-    ).execute(connection){
+    ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
                 return Err(failure::format_err!("{}", 

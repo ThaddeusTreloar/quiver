@@ -1,5 +1,5 @@
 // Internal
-use super::lib::connect_identify_authorize;
+use super::lib::connect_authenticate_authorize;
 use crate::shared::lib::{
     HandlerType,
     PermissionState,
@@ -27,7 +27,7 @@ pub fn transaction(
     name: &String
 ) -> Result<PermissionState, Error>
 {
-    match connect_identify_authorize(
+    match connect_authenticate_authorize(
         SERVICE_MANAGER_SOCKET_ADDR, 
         priv_key,
         name,

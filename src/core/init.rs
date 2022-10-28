@@ -7,6 +7,7 @@ use crate::{
 use std::fs::remove_file;
 
 pub fn init() -> CoreConfig {
+
     let config: CoreConfig = match confy::load("quiver", None) {
         Ok(config) => {
             println!("Config Loaded...");
@@ -31,38 +32,11 @@ pub fn init() -> CoreConfig {
 
     };
 
-    //init_database(config.core_db_path);
-
-
     // todo match on error kinds. Also, once std::fs::try_exists()
     // is pulled into stable, add that.
-    match remove_file("/tmp/quiver.calendar.sock")
-    {
-        Ok(_v) => (),
-        Err(e) =>
-        {
-            ()
-            //dbg!(&e);
-        }
-    }
-    match remove_file("/tmp/quiver.vpn.sock")
-    {
-        Ok(_v) => (),
-        Err(e) =>
-        {
-            ()
-            //dbg!(&e);
-        }
-    }
-    match remove_file("/tmp/quiver.nfc.sock")
-    {
-        Ok(_v) => (),
-        Err(e) =>
-        {
-            ()
-            //dbg!(&e);
-        }
-    }
+    remove_file("/tmp/quiver.calendar.sock");
+    remove_file("/tmp/quiver.vpn.sock");
+    remove_file("/tmp/quiver.nfc.sock");
 
     config
 }

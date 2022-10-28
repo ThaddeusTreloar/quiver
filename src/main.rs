@@ -6,19 +6,88 @@ mod shared;
 use env_logger;
 use log::LevelFilter;
 mod client;
+// Internal
+use crate::shared::lib::{
+    HandlerType,
+    
+};
+use crate::handler::*;
+use crate::core::{
+    init::init,
+    lib::build_connection_pool,
+};
+
+// External
+use std::{
+    thread,
+    io::prelude::*, 
+};
 
 fn main() {
-    let mut log_builder = env_logger::Builder::from_default_env();
-    log_builder
+
+    env_logger::Builder::from_default_env()
         .filter_level(LevelFilter::Info)
         .target(env_logger::Target::Stdout)
         .init();
     
-    let config: core::config::CoreConfig = core::init::init();
-    match core::main::main(config) {
-        Ok(_val) => return,
-        Err(_err) => unimplemented!(),
+    let config = init();
+
+    let permission_db_pool = match build_connection_pool(config.core_db_path){
+        Ok(val) => val,
+        // Was going to do some pattern matching to recover from this
+        // but it is not immediatly apparent what the errors might be.
+        // Will todo when I have time to dig through the r2d2 source.
+        Err(e) => unimplemented!(),
+    };
+
+    let active_handlers: Vec<HandlerType>;
+    // Need to confirm that the vec is less than usize::MAX and resize accordingly
+    // Potentially unnecessary but do it anyway.
+    if config.active_handlers.len() > usize::MAX
+    {
+        // todo.
+        // config.active_handlers.drain(usize::MAX..);
     }
+
+    // If All handlers are set then replace the array with one containing all handlers
+    // todo: rewrite this so that All doesn't have to be the first item in the array.
+    if config.active_handlers.contains(&HandlerType::All) 
+        { active_handlers = HandlerType::all_handlers() };
+
+    let mut thread_pool: Vec<thread::JoinHandle<()>> = Default::default();
+
+    for handler in active_handlers.iter()
+    {
+        match handler
+        {
+            HandlerType::Calendar =>
+            {
+                thread_pool.push(thread::spawn(move || {
+                    calendar::start_listener();
+                }));
+            },
+            HandlerType::Nfc =>
+            {
+                thread_pool.push(thread::spawn(move || {
+                    nfc::start_listener();
+                }));
+            },
+            HandlerType::Vpn =>
+            {
+                thread_pool.push(thread::spawn(move || {
+                    vpn::start_listener();
+                }));
+            }
+            HandlerType::All =>
+            {
+                continue;
+            }
+        }
+    }
+
+    println!("Initialisation Ok. Server Started...");
+
+    thread_pool.remove(0).join().unwrap();
 }
 
 #[test]

@@ -26,7 +26,7 @@ use std::io::prelude::{
     Write
 };
 
-pub fn connect_identify_authorize(
+pub fn connect_authenticate_authorize(
     address: &'static str, 
     priv_key: &PKey<Private>, 
     name: &String,

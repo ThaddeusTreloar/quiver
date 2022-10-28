@@ -11,13 +11,14 @@ use openssl::{
         EcKey,
         EcGroup,
         PointConversionForm,
+        EcPoint
     },
     bn::BigNumContext,
     nid::Nid
 };
 use serde_json::Deserializer;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum PermissionState
 {
     Read,
@@ -30,6 +31,13 @@ pub struct Permission {
     pub state: PermissionState,
     pub service: HandlerType,
     pub include: Vec<String>
+}
+
+impl PartialEq<HandlerType> for Permission
+{
+    fn eq(&self, other: &HandlerType) -> bool {
+        self.service.eq(other)
+    }
 }
 
 // Will add key types to enum wrapper
@@ -53,6 +61,20 @@ pub fn serialize_pubkey(key: EcKey<Public>) -> Result<Vec<u8>, Error>
     Ok(bytes)
 }
 
+pub fn deserialize_pubkey(bytes: Vec<u8>) -> Result<EcKey<Public>, Error>
+{
+    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM)?;
+    let mut ctx = BigNumContext::new()?;
+    let pubkey = EcPoint::from_bytes(
+        &group,
+        &bytes,
+        &mut ctx
+    )?;
+    Ok(EcKey::from_public_key(
+        &group,
+        &pubkey,
+    )?)
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
@@ -84,7 +106,14 @@ pub enum HandlerType {
     Calendar,
     Vpn,
     Nfc
-} 
+}
+
+impl HandlerType {
+    pub fn all_handlers() -> Vec<HandlerType>
+    {
+        vec![HandlerType::Calendar, HandlerType::Nfc, HandlerType::Vpn]
+    }
+}
 
 // For constructing function call interfaces into a thirdpary service
 #[derive(Debug, Serialize, Deserialize)]

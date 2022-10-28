@@ -1,8 +1,7 @@
 // Internal
-use super::lib::connect_identify_authorize;
+use super::lib::connect_authenticate_authorize;
 use crate::shared::lib::{
     HandlerType,
-    Permissionitem,
     SERVICE_MANAGER_SOCKET_ADDR,
     Action,
     from_reader
@@ -23,16 +22,20 @@ use serde_json::{
     to_writer,
 };
 
-pub fn transaction(
+pub fn transaction<'a, T>(
+    address: &'static str,
     service: &HandlerType,
-    reference: Option<&PermissionState>,
-    item: Option<&PermissionState>,
-    priv_key: &PKey<Private>
+    reference: Option<&T>,
+    item: Option<&T>,
+    priv_key: &PKey<Private>,
     name: &String
-) -> Result<PermissionState, Error>
+) -> Result<T, Error>
+where
+    T: Serialize,
+    T: Deserialize<'a>
 {
-    match connect_identify_authorize(
-        SERVICE_MANAGER_SOCKET_ADDR, 
+    match connect_authenticate_authorize(
+        address, 
         priv_key,
         name,
         match reference {
