@@ -81,9 +81,11 @@ fn identify(
 
             let signer = Signer::new_without_digest(priv_key)?;
 
-            signer.sign(&mut challenge)?;
+            let sig_len = signer.sign(&mut challenge)?;
 
-            connection.write_all(&challenge)?;
+            dbg!(sig_len);
+            to_writer(&mut connection, &sig_len)?;
+            connection.write_all(&challenge[0..sig_len])?;
 
             let res: bool = from_reader(&mut connection)?;
             

@@ -49,3 +49,16 @@ pub enum AuthorizationError
     #[fail(display = "Failed to authorize.")]
     AuthorizationFailed,
 }
+
+#[derive(Serialize, Deserialize, Debug, Fail)]
+pub enum TransactionError
+{
+    #[fail(display = "'{}' failed authorization for '{}' action for '{}' service.", client, action, service)]
+    ClientFailedAuthorization{
+        client: String,
+        action: String,
+        service: String,
+    },
+    #[fail(display = "Failed to authorize.")]
+    AuthorizationFailed,
+}

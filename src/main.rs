@@ -9,12 +9,11 @@ mod client;
 // Internal
 use crate::shared::lib::{
     HandlerType,
-    
+    build_connection_pool
 };
 use crate::handler::*;
 use crate::core::{
     init::init,
-    lib::build_connection_pool,
 };
 
 // External
@@ -22,6 +21,11 @@ use std::{
     thread,
     io::prelude::*, 
 };
+use diesel::r2d2::{
+    Pool, 
+    ConnectionManager
+};
+use diesel::sqlite::SqliteConnection;
 
 fn main() {
 
@@ -52,7 +56,9 @@ fn main() {
     // If All handlers are set then replace the array with one containing all handlers
     // todo: rewrite this so that All doesn't have to be the first item in the array.
     if config.active_handlers.contains(&HandlerType::All) 
-        { active_handlers = HandlerType::all_handlers() };
+        { active_handlers = HandlerType::all_handlers() } else {
+            active_handlers = config.active_handlers;
+        };
 
     let mut thread_pool: Vec<thread::JoinHandle<()>> = Default::default();
 
@@ -62,20 +68,21 @@ fn main() {
         {
             HandlerType::Calendar =>
             {
+                let p = permission_db_pool.clone();
                 thread_pool.push(thread::spawn(move || {
-                    calendar::start_listener();
+                    calendar::start_listener(p);
                 }));
             },
             HandlerType::Nfc =>
             {
                 thread_pool.push(thread::spawn(move || {
-                    nfc::start_listener();
+                    //nfc::start_listener();
                 }));
             },
             HandlerType::Vpn =>
             {
                 thread_pool.push(thread::spawn(move || {
-                    vpn::start_listener();
+                    //vpn::start_listener();
                 }));
             }
             HandlerType::All =>
@@ -87,7 +94,9 @@ fn main() {
 
     println!("Initialisation Ok. Server Started...");
 
-    thread_pool.remove(0).join().unwrap();
+    for _i in 0..thread_pool.len() {
+        thread_pool.remove(0).join().unwrap();
+    }
 }
 
 #[test]
@@ -97,6 +106,43 @@ fn send_item()
         DateTime,
         offset,
     };
+    use crate::core::db::db;
+    use crate::shared::lib::*;
+    use openssl::{
+        ec::{
+            EcKey,
+            EcGroup,
+        },
+        bn::{
+            BigNumContext
+        },
+        pkey::PKey
+    };
+
+    let mut connection = crate::shared::lib::build_connection_pool("run/core.sqlite".to_owned()).unwrap();
+
+    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
+    let key = EcKey::generate(&group).unwrap();
+    let pubkey = EcKey::from_public_key(
+        &group,
+        key.public_key()
+    ).unwrap();
+
+    if let Err(_e) = db::register_service(
+        "test".to_owned(),
+        Box::new(vec![Permission{
+            state: PermissionState::ReadWrite,
+            service: HandlerType::Calendar,
+            include: vec!["All".to_owned()]
+        }]),
+        Box::new(vec![]),
+        pubkey,
+        &connection
+    ) {
+        dbg!(_e);
+        assert!(false);
+    };
+
     let item = shared::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
@@ -124,13 +170,30 @@ fn send_item()
         owner: ()
     };
 
-    let res = client::consumer::calendar::push(item);
+    let priv_key = PKey::try_from(
+        key
+    ).unwrap();
+
+    let res = client::producer::calendar::put(
+        &item,
+        &priv_key,
+        &"test".to_owned()
+    );
+
+    if let Err(_e) = db::remove_service("test".to_owned(), &mut connection)
+    {
+        dbg!(_e);
+        assert!(false);
+    };
 
     if let Ok(()) = res {
         assert!(true);
     } else {
+        dbg!(res);
         assert!(false);
     }
+
+    
 }
 
 #[test]
@@ -139,9 +202,9 @@ fn sql_request_all()
 {
     use crate::core::db::db;
 
-    let mut conn = db::establish_connection("run/core.sqlite").unwrap();
+    let mut conn = crate::shared::lib::build_connection_pool("run/core.sqlite".to_owned()).unwrap();
 
-    match db::get_all_services(&mut conn)
+    match db::get_all_services(&conn)
     {
         Ok(val) => {
             dbg!(val);
@@ -157,7 +220,7 @@ fn sql_request_all()
     };
 }
 
-#[test]
+//#[test]
 
 fn sql_create_filter_delete()
 {
@@ -175,7 +238,7 @@ fn sql_create_filter_delete()
         }
     };
 
-    let mut connection = db::establish_connection("run/core.sqlite").unwrap();
+    let mut connection = crate::shared::lib::build_connection_pool("run/core.sqlite".to_owned()).unwrap();
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
@@ -193,7 +256,7 @@ fn sql_create_filter_delete()
         }]),
         Box::new(vec![]),
         pubkey,
-        &mut connection
+        &connection
     ) {
         dbg!(_e);
         assert!(false);
@@ -207,7 +270,7 @@ fn sql_create_filter_delete()
         
     };*/
 
-    if let Err(_e) = db::get_service("test".to_owned(), &mut connection)
+    if let Err(_e) = db::get_service(&"test".to_owned(), &mut connection)
     {
         dbg!(_e);
         assert!(false);

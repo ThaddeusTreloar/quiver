@@ -48,7 +48,7 @@ pub fn get_all_services(
 }
 
 pub fn search_service(
-    service_name: String,
+    service_name: &String,
     connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {
@@ -67,7 +67,7 @@ pub fn search_service(
 }
 
 pub fn get_service(
-    service_name: String,
+    service_name: &String,
     connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<super::models::ServiceQuery>, Error>
 {

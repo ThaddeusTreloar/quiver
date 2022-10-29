@@ -17,6 +17,14 @@ use openssl::{
     nid::Nid
 };
 use serde_json::Deserializer;
+use diesel::{
+    r2d2::{
+        ConnectionManager,
+        Pool,
+    },
+    sqlite::SqliteConnection
+};
+
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum PermissionState
@@ -74,6 +82,17 @@ pub fn deserialize_pubkey(bytes: Vec<u8>) -> Result<EcKey<Public>, Error>
         &group,
         &pubkey,
     )?)
+}
+
+pub fn build_connection_pool(path: String) -> Result<Pool<ConnectionManager<SqliteConnection>>, Error>
+{
+    let pool = Pool::builder()
+        .test_on_check_out(true)
+        .build(
+            ConnectionManager::<SqliteConnection>::new(path)
+        )?;
+
+    Ok(pool)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -138,7 +157,5 @@ pub const SERVICE_MANAGER_SOCKET_ADDR: &'static str = "/tmp/quiver.service_manag
 pub const CALENDAR_SOCKET_ADDR: &'static str = "/tmp/quiver.calendar.sock";
 pub const NFC_SOCKET_ADDR: &'static str = "/tmp/quiver.nfc.sock";
 pub const VPN_SOCKET_ADDR: &'static str = "/tmp/quiver.vpn.sock";
-
-
 
 pub const AUTH_KEY_ALGORITHM: &Nid = &Nid::SECP384R1;

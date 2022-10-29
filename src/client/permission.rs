@@ -19,9 +19,9 @@ use serde_json::{
     to_writer,
 };
 
-pub fn transaction(
+pub fn permission_transaction(
     service: &HandlerType,
-    reference: Option<&PermissionState>,
+    reference: Option<&(String, HandlerType)>,
     item: Option<&PermissionState>,
     priv_key: &PKey<Private>,
     name: &String
