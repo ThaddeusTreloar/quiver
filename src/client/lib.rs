@@ -11,7 +11,10 @@ use crate::shared::{
     }
 };
 // External
-use serde_json::to_writer;
+use serde_json::{
+    to_writer,
+    to_string
+};
 use interprocess::local_socket::LocalSocketStream;
 use failure::Error;
 use openssl::{
@@ -20,6 +23,7 @@ use openssl::{
         Private
     },
     sign::Signer,
+    hash::MessageDigest,
 };
 use std::io::prelude::{
     Read,
@@ -32,8 +36,7 @@ pub fn connect_authenticate_authorize(
     name: &String,
     action: &Action,
     service: &HandlerType
-) -> Result<LocalSocketStream, Error>
-{
+) -> Result<LocalSocketStream, Error> {
     Ok(
         authorize(service, action, 
             identify(name, priv_key,
@@ -50,10 +53,8 @@ fn authorize(
     match connection {
         Err(e) => Err(e),
         Ok(mut connection) => {
-            to_writer(&mut connection, service)?;
             to_writer(&mut connection, action)?;
-            match from_reader(&mut connection)?
-            {
+            match from_reader(&mut connection)? {
                 true => Ok(connection),
                 false => Err(
                     Error::from(
@@ -75,17 +76,13 @@ fn identify(
         Err(e) => Err(e),
         Ok(mut connection) => {
             to_writer(&mut connection, name)?;
-
+            // todo: check safety
             let mut challenge: [u8; 512] = [0u8; 512];
             connection.read(&mut challenge)?;
-
-            let signer = Signer::new_without_digest(priv_key)?;
-
-            let sig_len = signer.sign(&mut challenge)?;
-
-            dbg!(sig_len);
-            to_writer(&mut connection, &sig_len)?;
-            connection.write_all(&challenge[0..sig_len])?;
+            let mut signer = Signer::new(MessageDigest::sha256(), &priv_key)?;
+            signer.update(&challenge)?;
+            let sig = signer.sign_to_vec()?;
+            connection.write_all(&sig)?;
 
             let res: bool = from_reader(&mut connection)?;
             

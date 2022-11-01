@@ -1,31 +1,24 @@
-pub mod lib;
-pub mod calendar;
+pub mod server;
 
 // Internal
-use crate::{
-    shared::{
-        error::*,
-        lib::{
-        HandlerType,
-        Action
-        },
-        
-    },
-    connection::{
-        authorize_server_connection
-    }
+use crate::shared::lib::{
+    HandlerType,
+    Action
 };
+use crate::listener;
 
 //External
 use openssl::{
     pkey::{
         PKey,
-        Private,
-        Public
+        Private  
     },
+    sign::{
+        Signer,
+        Verifier
+    }
 };
 use log::{
-    info,
     warn
 };
 use interprocess::local_socket::{
@@ -36,7 +29,6 @@ use failure::{
     Error,
     Fail
 };
-use serde_json::to_writer;
 use std::collections::HashMap;
 
 struct HandlerGroup {
@@ -62,15 +54,8 @@ impl HandlerGroup
             Err(e) => Err(e),
             Ok((service, action, mut connection)) => {
                 match self.handlers.get(&service) {
-                    Some(func) => {
-                        to_writer(&mut connection, &true)?;
-                        func(connection, action)
-                    },
-                    None => Err(
-                        Error::from(
-                            InitiationError::ServiceNotSupported
-                        )
-                    )
+                    Some(func) => func(connection, action),
+                    None => Ok("()".to_owned())
                 }
             }
         }
@@ -79,8 +64,7 @@ impl HandlerGroup
 
 pub fn start(
     path: String, 
-    key: PKey<Private>,
-    server_key: PKey<Public>,
+    priv_key: PKey<Private>,
     grp: HandlerGroup
 ) -> Result<(), Error>
 {
@@ -90,12 +74,7 @@ pub fn start(
         match connection {
             Err(e) => warn!("Error accepting incoming connection: {}", e.name().unwrap()),
             Ok(mut connection) => {
-                match grp.handle_connection(authorize_server_connection(
-                    &key, &server_key, connection
-                )) {
-                    Ok(result) => info!("{}", result),
-                    Err(e) => warn!("{}", e.name().unwrap())
-                }
+                authrorize_connection()
             },
             Err(e) => ()
         }

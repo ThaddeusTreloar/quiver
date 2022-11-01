@@ -9,7 +9,7 @@ use chrono::{
     offset,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CalendarItem {
     pub title: String,
     pub start: DateTime<offset::Utc>,
@@ -28,4 +28,11 @@ pub struct CalendarItem {
     pub action: (),
     // Guests will be a link to INS or contact or something
     pub owner: ()
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum CalendarAction {
+    Single, 
+    Array,
+    Range,
 }

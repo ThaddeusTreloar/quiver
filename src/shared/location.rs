@@ -3,14 +3,14 @@ use serde::{
     Deserialize,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Coordinate {
     pub latitude: f64,
     pub lontitude: f64,
     pub altitude: f32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Location {
     pub common_name: String,
     pub coordinate: Coordinate,

@@ -90,7 +90,7 @@ pub fn register_service(
     service_name: String, 
     service_perm: Box<Vec<Permission>>, 
     service_exclude: Box<Vec<HandlerType>>, 
-    service_key: EcKey<Public>,
+    service_key: Vec<u8>,
     connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<(), Error>
 {
@@ -98,7 +98,7 @@ pub fn register_service(
         name: service_name,
         perm: to_string(&service_perm)?,
         exclude: to_string(&service_exclude)?,
-        pubkey: serialize_pubkey(service_key)?,
+        pubkey: service_key,
     };
     
     insert_into(services).values(record).execute(&mut connection.get()?)?;

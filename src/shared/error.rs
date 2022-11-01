@@ -22,6 +22,14 @@ pub enum ConnectionActionError
 }
 
 #[derive(Serialize, Deserialize, Debug, Fail)]
+pub enum InitiationError
+{
+    #[fail(display = "Service not supported")]
+    ServiceNotSupported
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Fail)]
 pub enum AuthenticationError
 {
     #[fail(display = "'{}' failed to authenticate.", client)]

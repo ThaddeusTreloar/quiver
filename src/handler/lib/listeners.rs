@@ -8,7 +8,7 @@ use crate::{
             PermissionState::*,
             HandlerType,
             from_reader,
-            deserialize_pubkey
+            AuthorizedConnection
         },
         error::*
     },
@@ -30,6 +30,7 @@ use openssl::{
     sign::{
         Verifier
     },
+    hash::MessageDigest,
 };
 use interprocess::local_socket::{
     LocalSocketListener,
@@ -88,7 +89,7 @@ fn authrorize(
                             Ok(connection)
                         },
                         _ => {
-                            to_writer(&mut connection, &true)?;
+                            to_writer(&mut connection, &false)?;
                             Err(
                                 Error::from(
                                     AuthorizationError::AuthorizationFailed
@@ -119,27 +120,14 @@ fn authenticate(
 
     let mut rand_bytes: [u8; 512] = [0u8; 512];
     rng_ctx.fill(&mut rand_bytes);
-    dbg!("ChaCha created and used");
     connection.write_all(&rand_bytes)?;
     
-    let mut verifier: Verifier = Verifier::new_without_digest(&key)?;
-    dbg!("Verifier created");
+    let mut verifier: Verifier = Verifier::new(MessageDigest::sha256(), &key)?;
+    let mut response: Vec<u8> = vec![0u8; 256];
+    let sig_len: usize = connection.read(&mut response)?;
     verifier.update(&rand_bytes)?;
-
-    
-
-    // Todo: Check this isn't exploitable.
-    let sig_len: usize = from_reader(&mut connection)?;
-    dbg!(&sig_len);
-    let mut response: Vec<u8> = vec![0u8; 103];
-    connection.read_exact(&mut response)?;
-    dbg!(&response);
-    dbg!(&response.len());
-    dbg!("Pre verify");
-    let verification: bool = verifier.verify(&response)?;
-    dbg!("Verified");
+    let verification: bool = verifier.verify(&response[0..sig_len])?;
     to_writer(&mut connection, &verification)?;
-    
     if verification { Ok(connection) } else { Err(
         Error::from(
                 AuthenticationError::AuthenticationFailed
@@ -148,7 +136,7 @@ fn authenticate(
     }
 }
 
-fn authenticate_authorize(
+pub fn authenticate_authorize(
     handler: &HandlerType,
     permission_db: &Pool<ConnectionManager<SqliteConnection>>,
     mut connection: LocalSocketStream
@@ -160,15 +148,13 @@ fn authenticate_authorize(
         permission_db
     )?;
 
-    dbg!(&query);
+    //dbg!(&query);
 
     match query.get(0) {
         Some(service_record) => {
             let perms: Vec<Permission> = from_str(service_record.perm.as_ref())?;
-            let bytes = service_record.pubkey.clone();
-            let key = PKey::try_from(
-                deserialize_pubkey(bytes)?
-            )?;
+            let key = PKey::public_key_from_der(&service_record.pubkey)?;
+            
             authrorize(handler, perms, authenticate(key, connection))
         },
         None => return Err(
@@ -186,13 +172,14 @@ pub fn af_local_listener(
     handler: HandlerType,
     permission_db: Pool<ConnectionManager<SqliteConnection>>,
     handler_db: Pool<ConnectionManager<SqliteConnection>>,
-    connection_handler: fn(Result<LocalSocketStream, Error>, &Pool<ConnectionManager<SqliteConnection>>) -> ()
+    connection_handler: fn(Result<LocalSocketStream, Error>, &Pool<ConnectionManager<SqliteConnection>>) -> Result<String, Error>
 ) -> Result<(), Error>
 {
     let listener: LocalSocketListener = LocalSocketListener::bind(listen_address)?;
     
-    for mut conn in listener.incoming() {
+    for conn in listener.incoming() {
         match conn {
+            Err(e) => warn!("{}", format!("Listener connection failed: {}", e)),
             Ok(connection) => {
                 let pdb = permission_db.clone();
                 let hdb = handler_db.clone();
@@ -211,18 +198,20 @@ pub fn af_local_listener(
                                 "Unavailable".to_owned()
                             }
                         };
-                        connection_handler(
+                        match connection_handler(
                             authenticate_authorize(
                                 &handler, 
                                 &pdb, 
                                 connection
                             ),
                             &hdb
-                        )
+                        ) {
+                            Ok(log) => info!("{}", log),
+                            Err(e) => warn!("{} for pid: {}", e.name().unwrap(), peer_pid)
+                        }
                     }
                 );
             },
-            Err(e) => warn!("{}", format!("Listener connection failed: {}", e))
         }
     }
 

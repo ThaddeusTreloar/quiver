@@ -24,7 +24,16 @@ use diesel::{
     },
     sqlite::SqliteConnection
 };
+use std::hash::Hash;
 
+// Not in use at the moment todo: delete
+#[derive(Debug)]
+pub struct AuthorizedConnection {
+    pub connection: LocalSocketStream,
+    pub client: String,
+    pub action: Action,
+    pub service: HandlerType
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum PermissionState
@@ -54,34 +63,6 @@ pub enum PubKey {
     Ecc(()),
     Ntru(()), 
     Rsa(()),
-}
-
-pub fn serialize_pubkey(key: EcKey<Public>) -> Result<Vec<u8>, Error>
-{
-    let pub_key = key.public_key();
-    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM)?;
-    let mut ctx = BigNumContext::new()?;
-    let bytes = pub_key.to_bytes(
-        &group,
-        PointConversionForm::COMPRESSED, 
-        &mut ctx
-    )?;
-    Ok(bytes)
-}
-
-pub fn deserialize_pubkey(bytes: Vec<u8>) -> Result<EcKey<Public>, Error>
-{
-    let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM)?;
-    let mut ctx = BigNumContext::new()?;
-    let pubkey = EcPoint::from_bytes(
-        &group,
-        &bytes,
-        &mut ctx
-    )?;
-    Ok(EcKey::from_public_key(
-        &group,
-        &pubkey,
-    )?)
 }
 
 pub fn build_connection_pool(path: String) -> Result<Pool<ConnectionManager<SqliteConnection>>, Error>
@@ -119,7 +100,7 @@ impl fmt::Display for Action
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum HandlerType {
     All,
     Calendar,

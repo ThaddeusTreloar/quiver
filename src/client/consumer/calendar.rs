@@ -65,13 +65,13 @@ pub fn get_range(
                 to_writer(&mut connection, &Action::Get)?;
                 to_writer(&mut connection, range)?;
                 match from_reader(&mut connection) {
+                    Err(e) => Err(e),
                     Ok(val) => match val {
                         Ok::<(), TransactionError>(_) => Ok(()),
                         Err::<(), TransactionError>(e) => {
                             Err(Error::from(e))
                         }
-                    },
-                    Err(e) => Err(e)
+                    }
                 }
             }
     }

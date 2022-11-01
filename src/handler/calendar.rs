@@ -66,20 +66,28 @@ pub fn start_listener(permission_db: Pool<ConnectionManager<SqliteConnection>>)
 fn handle_connection(
     mut connection: Result<LocalSocketStream, Error>, 
     handler_db: &Pool<ConnectionManager<SqliteConnection>>
-)
+) -> Result<String, Error>
 {
-    dbg!(&connection);
+    //dbg!(&connection);
     match connection {
-        Err(e) => return,
+        Err(e) => Err(e),
         Ok(mut connection) => match from_reader(&mut connection) {
             Ok(action) => match action {
-                Action::Put => if let Ok(value) = from_reader::<CalendarItem>(&mut connection) {
-                    dbg!(value);
-                    to_writer(&mut connection, &Ok::<(), TransactionError>(()));
+                Action::Put => match from_reader::<CalendarItem>(&mut connection) {
+                    Ok(value) => {
+                        to_writer(&mut connection, &Ok::<(), TransactionError>(()))?;
+                        Ok("Successful 'put' from client".to_owned())
+                    }
+                    Err(e) => Err(e)
                 },
-                _ => return,
+                a => Err(Error::from(
+                    crate::shared::error::ConnectionActionError::UnsupportedActionError{
+                        recieved: format!("{}", a),
+                        service: "calendar".to_owned()
+                    }
+                )),
             },
-            Err(e) => return,
+            Err(e) => Err(e),
         }
-    };
+    }
 }
