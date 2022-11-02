@@ -6,15 +6,11 @@ use interprocess::local_socket::LocalSocketStream;
 use std::fmt;
 use failure::Error;
 use openssl::{
-    pkey::Public,
-    ec::{
-        EcKey,
-        EcGroup,
-        PointConversionForm,
-        EcPoint
-    },
-    bn::BigNumContext,
-    nid::Nid
+    nid::Nid,
+    pkey::{
+        Public,
+        PKey
+    }
 };
 use serde_json::Deserializer;
 use diesel::{
@@ -25,6 +21,11 @@ use diesel::{
     sqlite::SqliteConnection
 };
 use std::hash::Hash;
+use std::fs::File;
+use std::io::{
+    BufReader,
+    prelude::Read
+};
 
 // Not in use at the moment todo: delete
 #[derive(Debug)]
@@ -134,9 +135,19 @@ where
     Ok(res)
 }
 
+pub fn get_server_public_key() -> Result<PKey<Public>, Error>
+{
+    let file = File::open(SERVER_PUBLIC_KEY_PATH)?;
+    let mut reader = BufReader::new(file);
+    let mut buff: Vec<u8> = Vec::new();
+    reader.read_to_end(&mut buff)?;
+    Ok(PKey::public_key_from_pem(&buff)?)
+}
+
 pub const SERVICE_MANAGER_SOCKET_ADDR: &'static str = "/tmp/quiver.service_manager.sock";
 pub const CALENDAR_SOCKET_ADDR: &'static str = "/tmp/quiver.calendar.sock";
 pub const NFC_SOCKET_ADDR: &'static str = "/tmp/quiver.nfc.sock";
 pub const VPN_SOCKET_ADDR: &'static str = "/tmp/quiver.vpn.sock";
 
 pub const AUTH_KEY_ALGORITHM: &Nid = &Nid::SECP384R1;
+pub const SERVER_PUBLIC_KEY_PATH: &'static str = "./run/public.pem";

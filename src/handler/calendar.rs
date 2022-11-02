@@ -1,6 +1,6 @@
 // Internal
 use crate::{
-    handler::lib::listeners,
+    handler::af_local_listener,
     shared::{
         calendar::CalendarItem,
         lib::{
@@ -16,26 +16,12 @@ use crate::{
 };
 
 // External
-use std::{
-    io::{
-        prelude::*, 
-    }
-};
-use log::{
-    info,
-    error,
-    warn
-};
-
-use interprocess::local_socket::{
-    LocalSocketStream
-};
 use failure::Error;
+use interprocess::local_socket::LocalSocketStream;
 use serde_json::{
     to_writer,
-    Deserializer,
+    to_string
 };
-use serde::Deserialize;
 use diesel::{
     r2d2::{
         Pool,
@@ -43,10 +29,15 @@ use diesel::{
     },
     sqlite::SqliteConnection
 };
+use openssl::pkey::{
+    PKey,
+    Private
+};
+use std::io::Write;
 
-pub fn start_listener(permission_db: Pool<ConnectionManager<SqliteConnection>>)
+pub fn start_listener(server_key: PKey<Private>, permission_db: Pool<ConnectionManager<SqliteConnection>>)
 {
-    listeners::af_local_listener(
+    af_local_listener(
         CALENDAR_SOCKET_ADDR.to_owned(), 
         HandlerType::Calendar,
         permission_db,
@@ -55,30 +46,43 @@ pub fn start_listener(permission_db: Pool<ConnectionManager<SqliteConnection>>)
         ){
             Ok(val) => val,
             // Some recovery: todo
-            Err(e) => {
+            Err(_e) => {
                 unimplemented!();
             }
         },
+        &server_key,
         handle_connection,
     );
 }
 
 fn handle_connection(
-    mut connection: Result<LocalSocketStream, Error>, 
-    handler_db: &Pool<ConnectionManager<SqliteConnection>>
+    service: &HandlerType,
+    _handler_db: &Pool<ConnectionManager<SqliteConnection>>,
+    connection: Result<(HandlerType, Action, LocalSocketStream), Error>, 
 ) -> Result<String, Error>
 {
-    //dbg!(&connection);
     match connection {
         Err(e) => Err(e),
-        Ok(mut connection) => match from_reader(&mut connection) {
-            Ok(action) => match action {
+        Ok((handler, action, mut connection)) => {
+            if *service != handler { 
+                to_writer(&mut connection, &false)?; 
+                return Err(
+                    Error::from(
+                        InitiationError::ServiceNotSupported
+                    )
+                ) 
+            } else { to_writer(&mut connection, &true)? };
+
+            match action {
                 Action::Put => match from_reader::<CalendarItem>(&mut connection) {
-                    Ok(value) => {
-                        to_writer(&mut connection, &Ok::<(), TransactionError>(()))?;
+                    Ok(_value) => {
+                        to_writer(&mut connection, &true)?;
                         Ok("Successful 'put' from client".to_owned())
                     }
-                    Err(e) => Err(e)
+                    Err(e) => {
+                        to_writer(&mut connection, &false)?;
+                        Err(e)
+                    },
                 },
                 a => Err(Error::from(
                     crate::shared::error::ConnectionActionError::UnsupportedActionError{
@@ -86,8 +90,7 @@ fn handle_connection(
                         service: "calendar".to_owned()
                     }
                 )),
-            },
-            Err(e) => Err(e),
+            }
         }
     }
 }

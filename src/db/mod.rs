@@ -1,13 +1,14 @@
+pub mod models;
+pub mod schema;
+
 use crate::shared::lib::{
     Permission,
     HandlerType,
-    serialize_pubkey
 };
-use crate::core::db::{
-    schema,
+use crate::db::{
     models::*,
 };
-use crate::core::db::schema::services::dsl::*;
+use crate::db::schema::services::dsl::*;
 
 use diesel::{
     prelude::*,
@@ -20,18 +21,6 @@ use diesel::{
         ConnectionManager
     }
 };
-use openssl::{
-    pkey::Public,
-    ec::{
-        EcKey,
-        EcGroup,
-        PointConversionForm
-    },
-    bn::{
-        BigNumContext,
-        BigNum
-    },
-};
 use serde_json::{
     to_string,
 };
@@ -39,7 +28,7 @@ use failure::Error;
 
 pub fn get_all_services(
     connection: &Pool<ConnectionManager<SqliteConnection>>
-) -> Result<Vec<super::models::ServiceQuery>, Error>
+) -> Result<Vec<models::ServiceQuery>, Error>
 {
     let results = services
         .load::<ServiceQuery>(&mut connection.get()?)?;
@@ -50,7 +39,7 @@ pub fn get_all_services(
 pub fn search_service(
     service_name: &String,
     connection: &Pool<ConnectionManager<SqliteConnection>>
-) -> Result<Vec<super::models::ServiceQuery>, Error>
+) -> Result<Vec<models::ServiceQuery>, Error>
 {
     let results = services
         .filter(
@@ -69,7 +58,7 @@ pub fn search_service(
 pub fn get_service(
     service_name: &String,
     connection: &Pool<ConnectionManager<SqliteConnection>>
-) -> Result<Vec<super::models::ServiceQuery>, Error>
+) -> Result<Vec<models::ServiceQuery>, Error>
 {
     // Double check this only returns exact, whole matches. todo
     let results = services

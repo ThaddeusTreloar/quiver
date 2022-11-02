@@ -69,4 +69,6 @@ pub enum TransactionError
     },
     #[fail(display = "Failed to authorize.")]
     AuthorizationFailed,
+    #[fail(display = "Serialize to writer failed.")]
+    SerializeToWriterFailed,
 }

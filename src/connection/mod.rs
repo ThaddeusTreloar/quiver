@@ -11,12 +11,10 @@ use crate::{
         },
         error::*
     },
-    core::db::{
-        db::{
-            search_service
-        },
+    db::{
+        search_service,
         models::ServiceQuery
-    }
+    },
 };
 
 // External
@@ -134,6 +132,7 @@ fn authorize(
     match connection {
         Err(e) => Err(e),
         Ok(mut connection) => {
+            to_writer(&mut connection, service)?;
             to_writer(&mut connection, action)?;
             match from_reader(&mut connection)? {
                 true => Ok(connection),
@@ -162,7 +161,7 @@ fn authorize_client(
                 |s| *s == &service
             ) {
                 Some(perm) => {
-                    match (action, &perm.state) {
+                    match (&action, &perm.state) {
                         (Get, Read | ReadWrite) => {
                             to_writer(&mut connection, &true)?;
                             Ok((service, action, connection))
@@ -202,7 +201,7 @@ fn interrogate_server(
         Ok(mut connection) => {
             let service: HandlerType = from_reader(&mut connection)?;
             let action: Action = from_reader(&mut connection)?;
-
+            // @JMP001
             Ok((service,
                 action,
                 connection))
@@ -251,7 +250,7 @@ fn start_client_interrogation(
 pub fn authorize_server_connection(
     key: &PKey<Private>,
     server_key: &PKey<Public>,
-    mut connection: LocalSocketStream
+    connection: LocalSocketStream
 ) -> Result<(HandlerType, Action, LocalSocketStream), Error>
 { 
     interrogate_server(
@@ -260,6 +259,7 @@ pub fn authorize_server_connection(
 }
 
 pub fn authorize_client_connection(
+    key: &PKey<Private>,
     permission_db: &Pool<ConnectionManager<SqliteConnection>>,
     mut connection: LocalSocketStream
 ) -> Result<(HandlerType, Action, LocalSocketStream), Error>
@@ -275,9 +275,11 @@ pub fn authorize_client_connection(
     match query.get(0) {
         Some(service_record) => {
             let perms: Vec<Permission> = from_str(service_record.perm.as_ref())?;
-            let key = PKey::public_key_from_der(&service_record.pubkey)?;
+            let client_key = PKey::public_key_from_pem(&service_record.pubkey)?;
             
-            authorize_client(perms, challenge_client(&key, Ok(connection)))
+            authorize_client(perms, 
+                solve_challenge(key, 
+                    challenge_client(&client_key, Ok(connection))))
         },
         None => return Err(
             Error::from(
@@ -293,7 +295,6 @@ pub fn connect_to_client(
     address: &'static str, 
     key: &PKey<Private>,
     client_key: &PKey<Public>,
-    name: &String,
     action: &Action,
     service: &HandlerType
 ) -> Result<LocalSocketStream, Error> {
@@ -307,14 +308,16 @@ pub fn connect_to_client(
 
 pub fn connect_to_server(
     address: &'static str, 
-    key: &PKey<Private>, 
+    key: &PKey<Private>,
+    server_key: &PKey<Public>,
     name: &String,
+    service: &HandlerType,
     action: &Action,
-    service: &HandlerType
 ) -> Result<LocalSocketStream, Error> {
     Ok(
-        authorize(service, action, 
-            authenticate(name, key,
-                connect(address)))?
+        authorize(service, action,
+            challenge_client(server_key,
+                authenticate(name, key,
+                    connect(address))))?
     )
 }

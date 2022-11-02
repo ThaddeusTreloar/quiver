@@ -1,8 +1,3 @@
-use crate::shared::lib::{
-    Permission,
-    HandlerType,
-};
-
 use diesel::{
     prelude::*,
 };
@@ -10,7 +5,7 @@ use serde::{
     Serialize,
     Deserialize
 };
-use crate::core::db::schema::services;
+use crate::db::schema::services;
 
 #[derive(Serialize, Deserialize, Debug, Insertable)]
 #[diesel(table_name = services)]

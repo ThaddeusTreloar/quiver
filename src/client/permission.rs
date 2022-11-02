@@ -1,17 +1,20 @@
 // Internal
-use super::lib::connect_authenticate_authorize;
-use crate::shared::lib::{
-    HandlerType,
-    PermissionState,
-    SERVICE_MANAGER_SOCKET_ADDR,
-    Action,
-    from_reader
+use crate::{
+    connection::connect_to_server,
+    shared::lib::{
+        HandlerType,
+        PermissionState,
+        SERVICE_MANAGER_SOCKET_ADDR,
+        Action,
+        from_reader
+    }
 };
 //External
 use failure::Error;
 use openssl::{
     pkey::{
         Private,
+        Public,
         PKey
     },
 };
@@ -20,17 +23,19 @@ use serde_json::{
 };
 
 pub fn permission_transaction(
-    service: &HandlerType,
     reference: Option<&(String, HandlerType)>,
     item: Option<&PermissionState>,
     priv_key: &PKey<Private>,
+    server_key: &PKey<Public>,
     name: &String
 ) -> Result<PermissionState, Error>
 {
-    match connect_authenticate_authorize(
+    match connect_to_server(
         SERVICE_MANAGER_SOCKET_ADDR, 
         priv_key,
+        server_key,
         name,
+        &HandlerType::Calendar,
         match reference {
             Some(_v) => &Action::Edit,
             None => {
@@ -39,8 +44,7 @@ pub fn permission_transaction(
                     None => &Action::Get
                 }
             }
-        },
-        service
+        }
     ) {
         Err(e) => Err(e),
         Ok(mut connection) => {

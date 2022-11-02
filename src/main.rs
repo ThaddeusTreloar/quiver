@@ -5,6 +5,7 @@ mod handler;
 mod shared;
 mod client;
 mod connection;
+mod db;
 
 use env_logger;
 use log::LevelFilter;
@@ -14,18 +15,16 @@ use crate::shared::lib::{
     HandlerType,
     build_connection_pool
 };
-use client::server::server;
 use crate::handler::*;
 use crate::core::{
-    init::init,
+    init,
 };
 
 // External
 use std::{
     thread,
-    io::prelude::*, 
 };
-
+                                  
 fn main() {
 
     env_logger::Builder::from_default_env()
@@ -33,14 +32,14 @@ fn main() {
         .target(env_logger::Target::Stdout)
         .init();
     
-    let config = init();
+    let (config, server_key) = init();
 
     let permission_db_pool = match build_connection_pool(config.core_db_path){
         Ok(val) => val,
         // Was going to do some pattern matching to recover from this
         // but it is not immediatly apparent what the errors might be.
         // Will todo when I have time to dig through the r2d2 source.
-        Err(e) => unimplemented!(),
+        Err(_e) => unimplemented!(),
     };
 
     let active_handlers: Vec<HandlerType>;
@@ -68,8 +67,9 @@ fn main() {
             HandlerType::Calendar =>
             {
                 let p = permission_db_pool.clone();
+                let k = server_key.clone();
                 thread_pool.push(thread::spawn(move || {
-                    calendar::start_listener(p);
+                    calendar::start_listener(k, p);
                 }));
             },
             HandlerType::Nfc =>
@@ -105,16 +105,14 @@ fn send_item()
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -122,7 +120,7 @@ fn send_item()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -166,12 +164,16 @@ fn send_item()
         owner: ()
     };
 
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let res = client::producer::calendar::put(
         &item,
         &priv_key,
+        &match get_server_public_key(){
+            Ok(k) => k,
+            Err(e) => panic!("Unable to get server pubkey"),
+        },
         &"test".to_owned()
     );
 
@@ -190,23 +192,21 @@ fn send_item()
   
 }
 
-#[test]
+//#[test]
 fn threading_test()
 {
     use chrono::{
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -214,7 +214,7 @@ fn threading_test()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -233,8 +233,8 @@ fn threading_test()
 
     use std::thread;
     let mut thread_pool: Vec<thread::JoinHandle<bool>> = vec![];
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let item = shared::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
@@ -272,6 +272,10 @@ fn threading_test()
             let res = client::producer::calendar::put(
                 &i,
                 &k,
+                &match get_server_public_key(){
+                    Ok(key) => key,
+                    Err(e) => panic!("Unable to get server pubkey"),
+                },
                 &"test".to_owned()
             );
 
@@ -307,16 +311,14 @@ fn send_item_different_user()
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -324,7 +326,7 @@ fn send_item_different_user()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -342,7 +344,7 @@ fn send_item_different_user()
     };
 
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test2".to_owned(),
@@ -386,12 +388,16 @@ fn send_item_different_user()
         owner: ()
     };
 
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let res = client::producer::calendar::put(
         &item,
         &priv_key,
+        &match get_server_public_key(){
+            Ok(k) => k,
+            Err(e) => panic!("Unable to get server pubkey"),
+        },
         &"test".to_owned()
     );
 
@@ -405,9 +411,6 @@ fn send_item_different_user()
         dbg!(_e);
         assert!(false);
     };
-
-
-    use crate::shared::error;
 
     match res {
         Ok(_) => assert!(false),
@@ -429,16 +432,14 @@ fn send_item_no_permissions()
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -446,7 +447,7 @@ fn send_item_no_permissions()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -490,12 +491,16 @@ fn send_item_no_permissions()
         owner: ()
     };
 
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let res = client::producer::calendar::put(
         &item,
         &priv_key,
+        &match get_server_public_key(){
+            Ok(k) => k,
+            Err(e) => panic!("Unable to get server pubkey"),
+        },
         &"test".to_owned()
     );
 
@@ -525,16 +530,14 @@ fn send_item_wrong_permissions()
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -542,7 +545,7 @@ fn send_item_wrong_permissions()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -586,12 +589,16 @@ fn send_item_wrong_permissions()
         owner: ()
     };
 
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let res = client::producer::calendar::put(
         &item,
         &priv_key,
+        &match get_server_public_key(){
+            Ok(k) => k,
+            Err(e) => panic!("Unable to get server pubkey"),
+        },
         &"test".to_owned()
     );
 
@@ -621,16 +628,14 @@ fn send_item_wrong_key()
         DateTime,
         offset,
     };
-    use crate::core::db::db;
+    use crate::db;
     use crate::shared::lib::*;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
         },
-        bn::{
-            BigNumContext
-        },
+        
         pkey::PKey
     };
 
@@ -638,7 +643,7 @@ fn send_item_wrong_key()
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
@@ -684,12 +689,16 @@ fn send_item_wrong_key()
 
     let key = EcKey::generate(&group).unwrap();
 
-    let privkey = key.private_key_to_der().unwrap();
-    let priv_key = PKey::private_key_from_der(&privkey).unwrap();
+    let privkey = key.private_key_to_pem().unwrap();
+    let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
     let res = client::producer::calendar::put(
         &item,
         &priv_key,
+        &match get_server_public_key(){
+            Ok(k) => k,
+            Err(e) => panic!("Unable to get server pubkey"),
+        },
         &"test".to_owned()
     );
 
@@ -716,7 +725,7 @@ fn send_item_wrong_key()
 
 fn sql_request_all()
 {
-    use crate::core::db::db;
+    use crate::db;
 
     let mut conn = crate::shared::lib::build_connection_pool("run/core.sqlite".to_owned()).unwrap();
 
@@ -740,25 +749,19 @@ fn sql_request_all()
 
 fn sql_create_filter_delete()
 {
-    use crate::core::db::db;
     use crate::shared::lib::*;
-    use crate::client::permission;
     use openssl::{
         ec::{
             EcKey,
             EcGroup,
-            PointConversionForm
         },
-        bn::{
-            BigNumContext
-        }
     };
 
     let mut connection = crate::shared::lib::build_connection_pool("run/core.sqlite".to_owned()).unwrap();
 
     let group = EcGroup::from_curve_name(*AUTH_KEY_ALGORITHM).unwrap();
     let key = EcKey::generate(&group).unwrap();
-    let pubkey = key.public_key_to_der().unwrap();
+    let pubkey = key.public_key_to_pem().unwrap();
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
