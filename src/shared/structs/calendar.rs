@@ -1,4 +1,4 @@
-use crate::shared::location;
+use super::location;
 
 use serde::{
     Serialize,

@@ -2,7 +2,7 @@
 use crate::{
     handler::af_local_listener,
     shared::{
-        calendar::CalendarItem,
+        structs::calendar::CalendarItem,
         lib::{
             CALENDAR_SOCKET_ADDR,
             Action,
@@ -10,7 +10,7 @@ use crate::{
             build_connection_pool,
             from_reader
         },
-        error::*
+        errors::*
     }
     
 };
@@ -85,7 +85,7 @@ fn handle_connection(
                     },
                 },
                 a => Err(Error::from(
-                    crate::shared::error::ConnectionActionError::UnsupportedActionError{
+                    ConnectionActionError::UnsupportedActionError{
                         recieved: format!("{}", a),
                         service: "calendar".to_owned()
                     }

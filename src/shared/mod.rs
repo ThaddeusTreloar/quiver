@@ -1,4 +1,3 @@
-pub mod calendar;
-pub mod location;
+pub mod structs;
 pub mod lib;
-pub mod error;
+pub mod errors;

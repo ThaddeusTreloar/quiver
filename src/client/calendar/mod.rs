@@ -1,26 +1,20 @@
 // Internal
 use crate::{
     shared::{
-        calendar::CalendarItem,
+        structs::calendar::CalendarItem,
         lib::{
             Action,
             HandlerType,
             CALENDAR_SOCKET_ADDR,
             from_reader
         },
-        error::{
-            TransactionError,
-            InitiationError
-        }
+        errors::*,
     },
-    connection::connect_to_server,
+    connection::connect_to_server
 };
 
 // External
-use serde_json::{
-    to_writer,
-    from_slice
-};
+use serde_json::to_writer;
 use openssl::{
     pkey::{
         PKey,
@@ -28,8 +22,11 @@ use openssl::{
         Public
     }
 };
+use chrono::{
+    DateTime,
+    offset::Utc
+};
 use failure::Error;
-use std::io::Read;
 
 pub fn put_series(
     item: &Vec<CalendarItem>,
@@ -38,29 +35,34 @@ pub fn put_series(
     name: &String
 ) -> Result<(), Error>
 {
-    match connect_to_server(
+    let mut connection = connect_to_server(
         CALENDAR_SOCKET_ADDR, 
         priv_key, 
         server_key,
-        name,
+        name, 
         &HandlerType::Calendar,
-        &Action::Put) {
-            Err(e) => Err(e),
-            Ok(mut connection) => {
-                to_writer(&mut connection, item)?;
-                let mut buff: Vec<u8> = Vec::new();
-                connection.read(&mut buff)?;
-                dbg!(&buff);
-                match from_slice(&buff) {
-                    Ok(val) => match val {
-                        Ok::<(), TransactionError>(_) => Ok(()),
-                        Err::<(), TransactionError>(e) => {
-                            Err(Error::from(e))
-                        }
-                    },
-                    Err(e) => Err(Error::from(e))
-                }
+        &Action::Put)?;
+
+    match from_reader(&mut connection)? {
+        true => {
+            to_writer(&mut connection, item)?;
+
+            match from_reader(&mut connection)? { 
+                true => {
+                    Ok(())
+                },
+                false => Err(
+                    Error::from(
+                        TransactionError::SerializeToWriterFailed
+                    )
+                )
             }
+        },
+        false => Err(
+            Error::from(
+                InitiationError::ServiceNotSupported
+            )
+        )
     }
 }
 
@@ -101,3 +103,29 @@ pub fn put(
         )
     }
 }
+
+pub fn get_range(
+    range: &(DateTime<Utc>, DateTime<Utc>),
+    priv_key: &PKey<Private>,
+    name: &String,
+    server_key: &PKey<Public>
+) -> Result<Vec<CalendarItem>, Error>
+{
+    match connect_to_server(
+        CALENDAR_SOCKET_ADDR, 
+        priv_key, 
+        server_key,
+        name,
+        &HandlerType::Calendar,
+        &Action::Get) {
+        Err(e) => Err(e),
+        Ok(mut connection) => {
+            to_writer(&mut connection, range)?;
+            match from_reader(&mut connection) {
+                Err(e) => Err(e),
+                Ok(val) => Ok(val)
+            }
+        }
+    }
+}
+

@@ -3,7 +3,7 @@ pub mod calendar;
 // Internal
 use crate::{
     shared::{
-        error::*,
+        errors::*,
         lib::{
         HandlerType,
         Action

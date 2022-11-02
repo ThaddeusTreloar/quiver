@@ -137,14 +137,14 @@ fn send_item()
         assert!(false);
     };
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -167,7 +167,7 @@ fn send_item()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let res = client::producer::calendar::put(
+    let res = client::calendar::put(
         &item,
         &priv_key,
         &match get_server_public_key(){
@@ -236,14 +236,14 @@ fn threading_test()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -269,7 +269,7 @@ fn threading_test()
         thread_pool.push(thread::spawn( move || {
             
 
-            let res = client::producer::calendar::put(
+            let res = client::calendar::put(
                 &i,
                 &k,
                 &match get_server_public_key(){
@@ -361,14 +361,14 @@ fn send_item_different_user()
         assert!(false);
     };
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -391,7 +391,7 @@ fn send_item_different_user()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let res = client::producer::calendar::put(
+    let res = client::calendar::put(
         &item,
         &priv_key,
         &match get_server_public_key(){
@@ -464,14 +464,14 @@ fn send_item_no_permissions()
         assert!(false);
     };
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -494,7 +494,7 @@ fn send_item_no_permissions()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let res = client::producer::calendar::put(
+    let res = client::calendar::put(
         &item,
         &priv_key,
         &match get_server_public_key(){
@@ -562,14 +562,14 @@ fn send_item_wrong_permissions()
         assert!(false);
     };
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -592,7 +592,7 @@ fn send_item_wrong_permissions()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let res = client::producer::calendar::put(
+    let res = client::calendar::put(
         &item,
         &priv_key,
         &match get_server_public_key(){
@@ -660,14 +660,14 @@ fn send_item_wrong_key()
         assert!(false);
     };
 
-    let item = shared::calendar::CalendarItem{
+    let item = shared::structs::calendar::CalendarItem{
         title: "SomeItem".to_owned(),
         start: "2022-09-24T12:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         end: "2022-09-24T14:00:00Z".parse::<DateTime<offset::Utc>>().unwrap(),
         guests: (),
-        location: shared::location::Location{
+        location: shared::structs::location::Location{
             common_name: "SomePlace".to_owned(),
-            coordinate: shared::location::Coordinate {
+            coordinate: shared::structs::location::Coordinate {
                 latitude: 5.0,
                 lontitude: 6.0,
                 altitude: 7.0,
@@ -692,7 +692,7 @@ fn send_item_wrong_key()
     let privkey = key.private_key_to_pem().unwrap();
     let priv_key = PKey::private_key_from_pem(&privkey).unwrap();
 
-    let res = client::producer::calendar::put(
+    let res = client::calendar::put(
         &item,
         &priv_key,
         &match get_server_public_key(){

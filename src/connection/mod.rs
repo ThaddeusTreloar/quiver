@@ -9,7 +9,7 @@ use crate::{
             HandlerType,
             from_reader,
         },
-        error::*
+        errors::*
     },
     db::{
         search_service,
