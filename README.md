@@ -3,7 +3,7 @@
 Quiver is an ambitious project aiming to create a cross-platform, standardised interface for common service types.
 The intent is to seperate the duties of front and back end services to allow for back-end service aggregation and composition by user applications.
 
-The end goal is to reduce the need to rewrite and reimplement unnecessarily, reduce the barrier of entry for new service providers, increase interoperability between devices and services, inhibit the propogation of closed ecosystems, hinder monopolies from abusing their market dominance to restrict consumer choice, and finally to empower users to take control of their ecosystem.
+The end goal is to reduce the need to rewrite and reimplement unnecessarily, reduce the barrier of entry for new service providers, increase interoperability between devices and services, reduce the number of single use applications (think headphone apps, apps where you just view an electricity bill), inhibit the propogation of closed ecosystems, hinder monopolies from abusing their market dominance to restrict consumer choice, and finally to empower users to take control of their ecosystem.
 
 This description may be vague however, I will use two examples to illustrate the vision I have for these interfaces.
 Note that while these examples only refer to third party services, there are plans for hardware interfacing standards eg: accessory device management standards to allow OS's to directly manage accessories.
@@ -101,3 +101,8 @@ The interfaces will be presented in short-hand for brevity:
 ```
 After implementing such interfaces 'ConcertTIX' would then have robust interoperability with all relevant services on the user's device.
 It's hard to understate how powerful this integration would be.
+
+## More information
+This is only a snippet of what is planned, but we hope that this could even reduce the need to access websites to do things such as manage utilities as well as improve existing apps through service composition.
+Any help would be much appreciated. In terms of development this is far too much for one or two people to accomplish and hopefully we can attract enough attention to build a community around making this possible.
+Feel free to send an email to thaddeus.treloar@protonmail.com if you have any queries or ideas about this project.
