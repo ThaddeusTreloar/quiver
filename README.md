@@ -2,7 +2,11 @@
 
 Quiver is an ambitious project aiming to create a cross-platform, standardised interface for common service types.
 The intent is to seperate the duties of front and back end services to allow for back-end service aggregation and composition by user applications.
+The end goal is to reduce the need to rewrite and reimplement unnecessarily, reduce the barrier of entry for new service providers, increase interoperability between devices and services, inhibit the propogation of closed ecosystems, hinder monopolies from abusing their market dominance to restrict consumer choice, and finally to empower users to take control of their ecosystem.
 This description may be vague however, I will use two examples to illustrate the vision I have for these interfaces.
+Note that while these examples only refer to third party services, there are plans for hardware interfacing standards eg: accessory device management standards to allow OS's to directly manage accessories.
+While reading through the examples one might immediately raise issues of privacy and security; as can be seen from the source code, robust security and privacy facilities are a priority and currently the most developed part of this system.
+The **entirety** of QuiverCore is being built **around** these robust security and privacy provisions rather than as an extension to an existing framework.
 
 ## Example 1: Maps Services.
 
