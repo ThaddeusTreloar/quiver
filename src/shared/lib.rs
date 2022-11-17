@@ -36,7 +36,7 @@ pub struct AuthorizedConnection {
     pub service: HandlerType
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum PermissionState
 {
     Read,

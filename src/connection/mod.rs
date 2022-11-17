@@ -103,7 +103,7 @@ fn solve_challenge(
         Ok(mut connection) => {
         // todo: check safety
         let mut challenge: [u8; 512] = [0u8; 512];
-        connection.read(&mut challenge)?;
+        connection.read_exact(&mut challenge)?;
         let mut signer = Signer::new(MessageDigest::sha256(), key)?;
         signer.update(&challenge)?;
         let sig = signer.sign_to_vec()?;
@@ -281,7 +281,7 @@ pub fn authorize_client_connection(
                 solve_challenge(key, 
                     challenge_client(&client_key, Ok(connection))))
         },
-        None => return Err(
+        None => Err(
             Error::from(
                 AuthenticationError::ServiceNotRegistered{
                     name: name
@@ -298,12 +298,10 @@ pub fn connect_to_client(
     action: &Action,
     service: &HandlerType
 ) -> Result<LocalSocketStream, Error> {
-    Ok(
-        start_client_interrogation(service, action, 
-            challenge_client(client_key, 
-                solve_challenge(&key, 
-                    connect(address))))?
-    )
+    start_client_interrogation(service, action, 
+        challenge_client(client_key, 
+            solve_challenge(key, 
+                    connect(address))))
 }
 
 pub fn connect_to_server(
@@ -314,10 +312,8 @@ pub fn connect_to_server(
     service: &HandlerType,
     action: &Action,
 ) -> Result<LocalSocketStream, Error> {
-    Ok(
-        authorize(service, action,
-            challenge_client(server_key,
-                authenticate(name, key,
-                    connect(address))))?
-    )
+    authorize(service, action,
+        challenge_client(server_key,
+            authenticate(name, key,
+                connect(address))))
 }

@@ -43,13 +43,6 @@ fn main() {
     };
 
     let active_handlers: Vec<HandlerType>;
-    // Need to confirm that the vec is less than usize::MAX and resize accordingly
-    // Potentially unnecessary but do it anyway.
-    if config.active_handlers.len() > usize::MAX
-    {
-        // todo.
-        // config.active_handlers.drain(usize::MAX..);
-    }
 
     // If All handlers are set then replace the array with one containing all handlers
     // todo: rewrite this so that All doesn't have to be the first item in the array.
@@ -418,7 +411,7 @@ fn send_item_different_user()
             dbg!(&e);
             dbg!(e.name());
             match e.name() {
-                Some("quiver::shared::error::AuthenticationError") => assert!(true),
+                Some("quiver::shared::errors::AuthenticationError") => assert!(true),
                 _ => assert!(false),
             }
         }
@@ -516,7 +509,7 @@ fn send_item_no_permissions()
             dbg!(&e);
             dbg!(&e.name());
             match e.name() {
-                Some("quiver::shared::error::AuthorizationError") => assert!(true),
+                Some("quiver::shared::errors::AuthorizationError") => assert!(true),
                 _ => assert!(false),
             }
         }
@@ -614,7 +607,7 @@ fn send_item_wrong_permissions()
             dbg!(&e);
             dbg!(e.name());
             match e.name() {
-                Some("quiver::shared::error::AuthorizationError") => assert!(true),
+                Some("quiver::shared::errors::AuthorizationError") => assert!(true),
                 _ => assert!(false),
             }
         }
@@ -714,7 +707,7 @@ fn send_item_wrong_key()
             dbg!(&e);
             dbg!(e.name());
             match e.name() {
-                Some("quiver::shared::error::AuthenticationError") => assert!(true),
+                Some("quiver::shared::errors::AuthenticationError") => assert!(true),
                 _ => assert!(false),
             }
         }

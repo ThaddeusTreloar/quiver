@@ -1,0 +1,9 @@
+{
+    "workbench.colorTheme": "Visual Studio 2019 Dark",
+    "explorer.confirmDragAndDrop": false,
+    "git.autofetch": true,
+    "python.languageServer": "Pylance",
+    "rust.mode": "rls",
+    "rust.rustup": "stable-x86_64-unknown-linux-gnu",
+    "rust-analyzer.checkOnSave.command": "clippy"
+}
