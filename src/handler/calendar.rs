@@ -1,9 +1,7 @@
 // Internal
 use crate::{
     handler::{
-        generic::{
-            Connection
-        }
+        Connection
     },
     shared::{
         structs::calendar::CalendarItem,

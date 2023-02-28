@@ -67,7 +67,7 @@ fn main() {
                 let p = permission_db_pool.clone();
                 let k = server_key.clone();
                 thread_pool.push(thread::spawn(move || {
-                    calendar::start_listener(k, p);
+                    //calendar::start_listener(k, p);
                 }));
             },
             HandlerType::Nfc =>

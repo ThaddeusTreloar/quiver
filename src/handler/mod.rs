@@ -74,9 +74,12 @@ impl Connection {
 }
 
 
-pub struct Handler {
+
+pub struct Handler<F> 
+where F: Future<Output = Result<(), Error>>
+{
     handler_db: HandlerDatabaseConnectionPool,
-    handler_fn: Box<dyn Fn(Connection, &HandlerDatabaseConnectionPool) -> Pin<dyn Future<Output = Result<(), Error>>>>,
+    handler_fn: fn(Connection, &HandlerDatabaseConnectionPool) -> F,
 }
 
 /*
@@ -84,15 +87,18 @@ When writing a new handler, one should never write to the permissions db.
 All write requests to the permission db should be sent to the permission handler.
 */
 
-pub struct HandlerGroup {
-    handlers: HashMap<HandlerType, Handler>
+pub struct HandlerGroup<F> 
+where F: Future<Output=Result<(), Error>>
+{
+    handlers: HashMap<HandlerType, Handler<F>>
 }
 
-impl HandlerGroup
+impl<F> HandlerGroup<F>
+where F: Future<Output = Result<(), Error>>
 {
     fn _add_handler(
         &mut self, type_: HandlerType, 
-        handler: Handler
+        handler: Handler<F>
     ) {
         self.handlers.insert(type_, handler);
     }
@@ -100,7 +106,7 @@ impl HandlerGroup
     async fn handle_connection(
         &self,
         connection: Result<(HandlerType, Action, UnixStream), Error>
-    ) -> Result<String, Error> {
+    ) -> Result<(), Error> {
         match connection {
             Err(e) => Err(e),
             Ok((service, action, mut stream)) => {
@@ -111,7 +117,8 @@ impl HandlerGroup
                         // within the auth process. May need redesign.
                         stream.writable().await?;
                         stream.try_write(&serde_json::ser::to_vec(&true)?)?;
-                        (handler.handler_fn)(stream, &handler.handler_db)
+                        (handler.handler_fn)(Connection::new(stream).await?, &handler.handler_db).await?;
+                        Ok(())
                     },
                     None => {
                         stream.writable().await?;
@@ -130,12 +137,13 @@ impl HandlerGroup
 
 use tokio::net::UnixListener;
 
-pub async fn start(
+pub async fn start<F>(
     path: String, 
     key: PKey<Private>,
     server_key: PKey<Public>,
-    grp: HandlerGroup
+    grp: HandlerGroup<F>
 ) -> Result<(), Error>
+where F: Future<Output = Result<(), Error>>
 {
     let connection = UnixListener::bind(path)?;
 
@@ -148,7 +156,7 @@ pub async fn start(
                         &key, &server_key, connection
                     ).await
                 ).await {
-                    Ok(result) => info!("{}", result),
+                    Ok(result) => info!("Success"),
                     Err(e) => warn!("{}", e.name().unwrap_or("No error name"))
                 }
             },
