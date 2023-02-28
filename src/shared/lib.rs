@@ -27,6 +27,8 @@ use std::io::{
     prelude::Read
 };
 
+pub type ConnectionHandler = fn(&HandlerType, &Pool<ConnectionManager<SqliteConnection>>, Result<(HandlerType, Action, LocalSocketStream), Error>) -> Result<String, Error>;
+
 // Not in use at the moment todo: delete
 #[derive(Debug)]
 pub struct AuthorizedConnection {
@@ -85,6 +87,31 @@ pub enum Action {
     Edit,
 }
 
+use tokio::net::UnixStream;
+use crate::shared::errors::InitiationError;
+impl Action {
+    pub async fn from_reader(stream: &mut UnixStream) -> Result<Action, Error>
+    {
+
+        stream.readable().await?;
+        let mut buf = [0u8; 4096];
+        
+        match stream.try_read(&mut buf){
+            Ok(0) => Err(InitiationError::StreamReadFailure.into()),
+            Ok(_) => {
+                let mut deser = Deserializer::from_slice(&buf) ;
+                match Action::deserialize(&mut deser) {
+                    Ok(action) => Ok(action),
+                    Err(e) => Err(Error::from(e))
+                }
+            },
+            Err(e) => {
+                Err(e.into())
+            }
+        }
+    }
+}
+
 impl fmt::Display for Action
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
@@ -114,6 +141,12 @@ impl HandlerType {
     {
         vec![HandlerType::Calendar, HandlerType::Nfc, HandlerType::Vpn]
     }
+}
+
+pub enum Address {
+    Local(String),
+    Inet(String),
+    Bt(String)
 }
 
 // For constructing function call interfaces into a thirdpary service

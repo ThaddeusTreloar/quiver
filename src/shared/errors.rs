@@ -25,7 +25,10 @@ pub enum ConnectionActionError
 pub enum InitiationError
 {
     #[fail(display = "Service not supported")]
-    ServiceNotSupported
+    ServiceNotSupported,
+
+    #[fail(display = "Failed to read from stream.")]
+    StreamReadFailure
 }
 
 

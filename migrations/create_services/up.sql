@@ -1,6 +1,7 @@
 CREATE TABLE services (
     id INTEGER PRIMARY KEY,
     name VARCHAR UNIQUE NOT NULL,
+    address VARCHAR UNIQUE NOT NULL,
     perm VARCHAR NOT NULL,
     exclude VARCHAR NOT NULL,
     pubkey BINARY NOT NULL

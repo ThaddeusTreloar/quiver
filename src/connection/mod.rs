@@ -270,8 +270,6 @@ pub fn authorize_client_connection(
         permission_db
     )?;
 
-    //dbg!(&query);
-
     match query.get(0) {
         Some(service_record) => {
             let perms: Vec<Permission> = from_str(service_record.perm.as_ref())?;
@@ -284,7 +282,7 @@ pub fn authorize_client_connection(
         None => Err(
             Error::from(
                 AuthenticationError::ServiceNotRegistered{
-                    name: name
+                    name
                 }
             )
         )

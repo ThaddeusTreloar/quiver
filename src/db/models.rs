@@ -13,6 +13,7 @@ pub struct ServiceAdd
 {
     pub name: String,
     // Serialised Vec of Permission
+    pub address: String,
     pub perm: String,
     // Serialised Vec of HandlerType
     pub exclude: String,
@@ -26,6 +27,7 @@ pub struct ServiceQuery
 {
     pub id: i32,
     pub name: String,
+    pub address: String,
     // Serialised Vec of Permission
     pub perm: String,
     // Serialised Vec of HandlerType

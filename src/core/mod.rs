@@ -1,7 +1,6 @@
 // Internal 
 
 // External
-use confy;
 use std::default::Default;
 use std::io::{
     prelude::Read,

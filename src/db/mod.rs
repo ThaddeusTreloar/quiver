@@ -26,6 +26,10 @@ use serde_json::{
 };
 use failure::Error;
 
+
+
+
+
 pub fn get_all_services(
     connection: &Pool<ConnectionManager<SqliteConnection>>
 ) -> Result<Vec<models::ServiceQuery>, Error>
@@ -77,6 +81,7 @@ pub fn get_service(
 
 pub fn register_service(
     service_name: String, 
+    service_address: String,
     service_perm: Box<Vec<Permission>>, 
     service_exclude: Box<Vec<HandlerType>>, 
     service_key: Vec<u8>,
@@ -85,6 +90,7 @@ pub fn register_service(
 {
     let record: ServiceAdd = ServiceAdd {
         name: service_name,
+        address: service_address,
         perm: to_string(&service_perm)?,
         exclude: to_string(&service_exclude)?,
         pubkey: service_key,
@@ -117,19 +123,19 @@ pub fn update_service_permissions(
     ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
-                return Err(failure::format_err!("{}", 
+                Err(failure::format_err!("{}", 
                     diesel::result::Error::NotFound.to_string()
-                ));
+                ))
             } else {
-                return Ok(());
+                Ok(())
             }
         },
         Err(e) => {
-            return Err(failure::format_err!("{}", 
+            Err(failure::format_err!("{}", 
                 e.to_string()
-            ));
+            ))
         },
-    };
+    }
 }
 
 pub fn update_service_exclusions(
@@ -154,19 +160,19 @@ pub fn update_service_exclusions(
     ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
-                return Err(failure::format_err!("{}", 
+                Err(failure::format_err!("{}", 
                     diesel::result::Error::NotFound.to_string()
-                ));
+                ))
             } else {
-                return Ok(());
+                Ok(())
             }
         },
         Err(e) => {
-            return Err(failure::format_err!("{}", 
+            Err(failure::format_err!("{}", 
                 e.to_string()
-            ));
+            ))
         },
-    };
+    }
 }
 
 pub fn remove_service(
@@ -187,19 +193,19 @@ pub fn remove_service(
     ).execute(&mut connection.get()?){
         Ok(val) => {
             if val != 1 {
-                return Err(failure::format_err!("{}", 
+                Err(failure::format_err!("{}", 
                     diesel::result::Error::NotFound.to_string()
-                ));
+                ))
             } else {
-                return Ok(());
+                Ok(())
             }
         },
         Err(e) => {
-            return Err(failure::format_err!("{}", 
+            Err(failure::format_err!("{}", 
                 e.to_string()
-            ));
+            ))
         },
-    };
+    }
 }
 
 /*fn validate_service_permission(
@@ -218,10 +224,10 @@ other services without a service being explicitly granted permissions to it.
 It is identified via a challenge using the key 'somePubKey' before it's actions are
 authorized according to permissions listed in perm.
 
-name        |   perm                                    |   exclude       |   key         |
-someService |   Vec[Permission {                        |   Vec[Calendar] |   somePubKey  |
-                    state: PermissionState::ReadWrite
-                    service: HandlerType::Calendar,
-                    include: Vec["All", "Other"]
-                }]
+name        | Address         | perm                                    |   exclude       |   key         |
+someService | Address(String) | Vec[Permission {                        |   Vec[Calendar] |   somePubKey  |
+                                    state: PermissionState::ReadWrite
+                                    service: HandlerType::Calendar,
+                                    include: Vec["All", "Other"]
+                                }]
 */

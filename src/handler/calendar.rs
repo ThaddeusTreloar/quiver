@@ -1,6 +1,10 @@
 // Internal
 use crate::{
-    handler::af_local_listener,
+    handler::{
+        generic::{
+            Connection
+        }
+    },
     shared::{
         structs::calendar::CalendarItem,
         lib::{
@@ -8,7 +12,7 @@ use crate::{
             Action,
             HandlerType,
             build_connection_pool,
-            from_reader
+            from_reader,
         },
         errors::*
     }
@@ -20,7 +24,6 @@ use failure::Error;
 use interprocess::local_socket::LocalSocketStream;
 use serde_json::{
     to_writer,
-    to_string
 };
 use diesel::{
     r2d2::{
@@ -33,64 +36,50 @@ use openssl::pkey::{
     PKey,
     Private
 };
-use std::io::Write;
 
-pub fn start_listener(server_key: PKey<Private>, permission_db: Pool<ConnectionManager<SqliteConnection>>)
-{
-    af_local_listener(
-        CALENDAR_SOCKET_ADDR.to_owned(), 
-        HandlerType::Calendar,
-        permission_db,
-        match build_connection_pool(
-            "run/calendar.sqlite".to_owned()
-        ){
-            Ok(val) => val,
-            // Some recovery: todo
-            Err(_e) => {
-                unimplemented!();
-            }
-        },
-        &server_key,
-        handle_connection,
-    );
-}
+use crate::handler::HandlerDatabaseConnectionPool;
+use tokio::net::UnixStream;
 
 fn handle_connection(
-    service: &HandlerType,
-    _handler_db: &Pool<ConnectionManager<SqliteConnection>>,
-    connection: Result<(HandlerType, Action, LocalSocketStream), Error>, 
+    connection: Connection,
+    handler_db: &HandlerDatabaseConnectionPool,
 ) -> Result<String, Error>
 {
-    match connection {
-        Err(e) => Err(e),
-        Ok((handler, action, mut connection)) => {
-            if *service != handler { 
-                to_writer(&mut connection, &false)?; 
-                return Err(
-                    Error::from(
-                        InitiationError::ServiceNotSupported
-                    )
-                ) 
-            } else { to_writer(&mut connection, &true)? };
 
-            match action {
-                Action::Put => match from_reader::<CalendarItem>(&mut connection) {
-                    Ok(_value) => {
-                        to_writer(&mut connection, &true)?;
-                        Ok("Successful 'put' from client".to_owned())
-                    }
-                    Err(e) => {
-                        to_writer(&mut connection, &false)?;
-                        Err(e)
-                    },
+    let (stream, action) = connection.into_parts();
+
+
+    match action {
+        Action::Put => {
+            let mut len_buff = [0u8; 8];
+            stream.try_read(&mut len_buff)?;
+
+            let len: u64 = serde_json::de::from_slice(&len_buff)?;
+
+            let mut buff = vec![0u8; len as usize];
+
+            // Todo: check length validated
+            stream.try_read(&mut buff)?;
+
+            let item = serde_json::de::from_slice::<CalendarItem>(&buff);
+
+            match item {
+                Ok(_value) => {
+                    stream.try_write(serde_json::ser::to_vec(&true)?.as_slice())?;
+                    Ok("Successful 'put' from client".to_owned())
+                }
+                Err(e) => {
+                    // Todo: some error message
+                    stream.try_write(serde_json::ser::to_vec(&false)?.as_slice())?;
+                    Err(e.into())
                 },
-                a => Err(Error::from(
-                    ConnectionActionError::UnsupportedActionError{
-                        recieved: format!("{}", a),
-                        service: "calendar".to_owned()
-                    }
-                )),
             }
-        }
+        },
+        a => Err(Error::from(
+            ConnectionActionError::UnsupportedActionError{
+                recieved: format!("{}", a),
+                service: "calendar".to_owned()
+            }
+        )),
     }
 }

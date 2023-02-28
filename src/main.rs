@@ -6,9 +6,12 @@ mod shared;
 mod client;
 mod connection;
 mod db;
+mod connection_async;
 
 use env_logger;
 use log::LevelFilter;
+
+// use interprocess::local_socket::tokio::LocalSocketListener;
 
 // Internal
 use crate::shared::lib::{
@@ -52,6 +55,8 @@ fn main() {
         };
 
     let mut thread_pool: Vec<thread::JoinHandle<()>> = Default::default();
+
+    
 
     for handler in active_handlers.iter()
     {
@@ -117,6 +122,7 @@ fn send_item()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,
@@ -211,6 +217,7 @@ fn threading_test()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,
@@ -323,6 +330,7 @@ fn send_item_different_user()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,
@@ -341,6 +349,7 @@ fn send_item_different_user()
 
     if let Err(_e) = db::register_service(
         "test2".to_owned(),
+        "test2.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,
@@ -444,6 +453,7 @@ fn send_item_no_permissions()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::Read,
             service: HandlerType::Calendar,
@@ -542,6 +552,7 @@ fn send_item_wrong_permissions()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::Read,
             service: HandlerType::Calendar,
@@ -640,6 +651,7 @@ fn send_item_wrong_key()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,
@@ -758,6 +770,7 @@ fn sql_create_filter_delete()
 
     if let Err(_e) = db::register_service(
         "test".to_owned(),
+        "test.sock".to_owned(),
         Box::new(vec![Permission{
             state: PermissionState::ReadWrite,
             service: HandlerType::Calendar,

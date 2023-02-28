@@ -28,6 +28,10 @@ use chrono::{
 };
 use failure::Error;
 
+trait CalendarHandler {
+    
+}
+
 pub fn put_series(
     item: &Vec<CalendarItem>,
     priv_key: &PKey<Private>,
